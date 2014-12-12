@@ -21,7 +21,6 @@ package org.sonar.plugins.scm.perforce;
 
 import com.perforce.p4java.client.IClient;
 import com.perforce.p4java.client.IClientViewMapping;
-import com.perforce.p4java.core.IChangelist;
 import com.perforce.p4java.core.file.FileSpecBuilder;
 import com.perforce.p4java.core.file.IFileSpec;
 import com.perforce.p4java.exception.MessageSeverityCode;
@@ -29,8 +28,6 @@ import com.perforce.p4java.exception.P4JavaException;
 import com.perforce.p4java.impl.generic.client.ClientView;
 import com.perforce.p4java.impl.generic.client.ClientView.ClientViewMapping;
 import com.perforce.p4java.impl.mapbased.rpc.sys.helper.RpcSystemFileCommandsHelper;
-import com.perforce.p4java.option.UsageOptions;
-import com.perforce.p4java.option.server.LoginOptions;
 import com.perforce.p4java.option.server.TrustOptions;
 import com.perforce.p4java.server.IOptionsServer;
 import com.perforce.p4java.server.ServerFactory;
@@ -40,30 +37,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.utils.MessageException;
 
+import javax.annotation.Nullable;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.Properties;
 
-public class P4Executor {
+public class PerforceExecutor {
 
-  private static final Logger LOG = LoggerFactory.getLogger(P4Executor.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PerforceExecutor.class);
 
   /** Perforce server. */
   private IOptionsServer server;
 
   /** Perforce client. */
   private IClient client;
-
-  /** Perforce server properties. */
-  private Properties p4ServerProperties;
-
-  /** Perforce server options. */
-  private UsageOptions p4ServerOptions;
-
-  /** The p4 login options. */
-  private LoginOptions p4LoginOptions;
 
   private final PerforceConfiguration config;
 
@@ -79,9 +68,9 @@ public class P4Executor {
    * @throws ScmException
    *             the scm exception
    */
-  public P4Executor(PerforceConfiguration config, File workDir) {
+  public PerforceExecutor(PerforceConfiguration config, File workDir) {
     this.config = config;
-    initP4(workDir);
+    init(workDir);
   }
 
   /**
@@ -113,67 +102,10 @@ public class P4Executor {
   }
 
   /**
-   * Gets the p4 server properties.
-   *
-   * @return the p4 server properties
-   */
-  public Properties getP4ServerProperties() {
-    return p4ServerProperties;
-  }
-
-  /**
-   * Sets the p4 server properties.
-   *
-   * @param p4ServerProperties
-   *            the new p4 server properties
-   */
-  public void setP4ServerProperties(Properties p4ServerProperties) {
-    this.p4ServerProperties = p4ServerProperties;
-  }
-
-  /**
-   * Gets the p4 server options.
-   *
-   * @return the p4 server options
-   */
-  public UsageOptions getP4ServerOptions() {
-    return p4ServerOptions;
-  }
-
-  /**
-   * Sets the p4 server options.
-   *
-   * @param p4ServerOptions
-   *            the new p4 server options
-   */
-  public void setP4ServerOptions(UsageOptions p4ServerOptions) {
-    this.p4ServerOptions = p4ServerOptions;
-  }
-
-  /**
-   * Gets the p4 login options.
-   *
-   * @return the p4 login options
-   */
-  public LoginOptions getP4LoginOptions() {
-    return p4LoginOptions;
-  }
-
-  /**
-   * Sets the p4 login options.
-   *
-   * @param p4LoginOptions
-   *            the new p4 login options
-   */
-  public void setP4LoginOptions(LoginOptions p4LoginOptions) {
-    this.p4LoginOptions = p4LoginOptions;
-  }
-
-  /**
    * Initialize Perforce server and client instances.
    *
    */
-  protected void initP4(File workDir) {
+  protected void init(File workDir) {
     // Initialize the Perforce server.
     initServer();
     // Initialize the Perforce client.
@@ -184,7 +116,7 @@ public class P4Executor {
    * Cleanup Perforce server and client instances; logout, disconnect, etc.
    *
    */
-  public void cleanP4() {
+  public void clean() {
     // Cleanup the Perforce server.
     cleanServer();
   }
@@ -197,68 +129,76 @@ public class P4Executor {
    * (if present).
    *
    */
-  protected void initServer() {
+  private void initServer() {
 
     try {
-      // Set default system file helper
-      ServerFactory.setRpcFileSystemHelper(new RpcSystemFileCommandsHelper());
-      // Get an instance of the P4J server.
-      if (StringUtils.isEmpty(config.port())) {
-        throw MessageException.of("Please configure perforce port using " + PerforceConfiguration.PORT_PROP_KEY);
-      }
-      if (config.useSsl()) {
-        server = ServerFactory.getOptionsServer("p4javassl://" + config.port(), p4ServerProperties, p4ServerOptions);
-        server.addTrust(new TrustOptions().setAutoAccept(true));
-      } else {
-        server = ServerFactory.getOptionsServer("p4java://" + config.port(), p4ServerProperties, p4ServerOptions);
-      }
-      // Register server callback.
-      server.registerCallback(new ICommandCallback() {
-        public void receivedServerMessage(int key, int genericCode,
-          int severityCode, String message) {
-          // Log warning messages from server, since it's not included in the other callback methods.
-          if (severityCode == MessageSeverityCode.E_WARN) {
-            LOG.warn(message);
-          }
-        }
-
-        public void receivedServerInfoLine(int key, String infoLine) {
-          LOG.info(infoLine);
-        }
-
-        public void receivedServerErrorLine(int key, String errorLine) {
-          LOG.error(errorLine);
-        }
-
-        public void issuingServerCommand(int key, String command) {
-          LOG.info(command);
-        }
-
-        public void completedServerCommand(int key, long millisecsTaken) {
-          LOG.info("Command completed in " + millisecsTaken + "ms");
-        }
-      });
+      createServer();
       // Connect to the server.
       server.connect();
       // Set the Perforce charset.
-      if (!isEmpty(config.charset())) {
-        if (server.isConnected()) {
-          if (server.supportsUnicode()) {
-            server.setCharsetName(config.charset());
-          }
-        }
+      String charset = config.charset();
+      if (charset != null && server.isConnected() && server.supportsUnicode()) {
+        server.setCharsetName(charset);
       }
       // Set server user.
-      if (!isEmpty(config.username())) {
-        server.setUserName(config.username());
+      String username = config.username();
+      if (username != null) {
+        server.setUserName(username);
         // Login to the server with a password.
         // Password can be null if it is not needed (i.e. SSO logins).
-        server.login(config.password(), p4LoginOptions);
+        server.login(config.password(), null);
       }
     } catch (URISyntaxException e) {
       throw new IllegalArgumentException(e.getLocalizedMessage(), e);
     } catch (P4JavaException e) {
       throw new IllegalStateException(e.getLocalizedMessage(), e);
+    }
+  }
+
+  private void createServer() throws URISyntaxException, P4JavaException {
+    // Set default system file helper
+    ServerFactory.setRpcFileSystemHelper(new RpcSystemFileCommandsHelper());
+    // Get an instance of the P4J server.
+    if (StringUtils.isEmpty(config.port())) {
+      throw MessageException.of("Please configure perforce port using " + PerforceConfiguration.PORT_PROP_KEY);
+    }
+    if (config.useSsl()) {
+      server = ServerFactory.getOptionsServer("p4javassl://" + config.port(), null, null);
+      server.addTrust(new TrustOptions().setAutoAccept(true));
+    } else {
+      server = ServerFactory.getOptionsServer("p4java://" + config.port(), null, null);
+    }
+    // Register server callback.
+    server.registerCallback(new CommandLogger());
+  }
+
+  private static class CommandLogger implements ICommandCallback {
+    @Override
+    public void receivedServerMessage(int key, int genericCode, int severityCode, String message) {
+      // Log warning messages from server, since it's not included in the other callback methods.
+      if (severityCode == MessageSeverityCode.E_WARN) {
+        LOG.warn(message);
+      }
+    }
+
+    @Override
+    public void receivedServerInfoLine(int key, String infoLine) {
+      LOG.info(infoLine);
+    }
+
+    @Override
+    public void receivedServerErrorLine(int key, String errorLine) {
+      LOG.error(errorLine);
+    }
+
+    @Override
+    public void issuingServerCommand(int key, String command) {
+      LOG.info(command);
+    }
+
+    @Override
+    public void completedServerCommand(int key, long millisecsTaken) {
+      LOG.info("Command completed in " + millisecsTaken + "ms");
     }
   }
 
@@ -289,6 +229,7 @@ public class P4Executor {
     try {
       rootDir = workDir.getCanonicalPath();
     } catch (IOException ex) {
+      throw new IllegalStateException("Unable to compute rootDir", ex);
     }
 
     rootDir = encodeWildcards(rootDir);
@@ -352,8 +293,7 @@ public class P4Executor {
     // Create a new client
     String repoPath = getRepoLocation(encodeWildcards(basedir.getAbsolutePath()));
     String viewPath = getCanonicalRepoPath(repoPath);
-    ClientViewMapping clientViewMapping = new ClientViewMapping(0, viewPath, "//" + p4ClientName + "/...");
-    return clientViewMapping;
+    return new ClientViewMapping(0, viewPath, "//" + p4ClientName + "/...");
   }
 
   /**
@@ -365,23 +305,17 @@ public class P4Executor {
    */
   private String getRepoLocation(String path) {
     String location = null;
-    if (!isEmpty(path)) {
-      if (client != null) {
-        try {
-          List<IFileSpec> fileSpecs = client.where(FileSpecBuilder.makeFileSpecList(path));
-          if (fileSpecs != null) {
-            for (IFileSpec fileSpec : fileSpecs) {
-              if (fileSpec != null) {
-                if (!isEmpty(fileSpec.getDepotPathString())) {
-                  location = fileSpec.getDepotPathString();
-                  break;
-                }
-              }
-            }
+    if (StringUtils.isNotBlank(path) && client != null) {
+      try {
+        List<IFileSpec> fileSpecs = client.where(FileSpecBuilder.makeFileSpecList(path));
+        for (IFileSpec fileSpec : fileSpecs) {
+          if (fileSpec != null && StringUtils.isNotBlank(fileSpec.getDepotPathString())) {
+            location = fileSpec.getDepotPathString();
+            break;
           }
-        } catch (P4JavaException e) {
-          throw new IllegalStateException(e);
         }
+      } catch (P4JavaException e) {
+        throw new IllegalStateException(e);
       }
     }
     return location;
@@ -394,7 +328,7 @@ public class P4Executor {
    *            the repo path
    * @return the canonical repo path
    */
-  public static String getCanonicalRepoPath(String repoPath) {
+  private static String getCanonicalRepoPath(String repoPath) {
     if (repoPath == null) {
       return null;
     }
@@ -408,58 +342,16 @@ public class P4Executor {
   }
 
   /**
-   * Parse the changelist string to a changelist number. Convert the "default"
-   * changelist string to the default changelist number. If it is negative
-   * return unknown changelist. Otherwise, return the converted changelist
-   * number.
-   *
-   * @param changelist
-   *            the changelist
-   * @return the int
-   */
-  public static int parseChangelist(String changelist) {
-    if (!isEmpty(changelist)) {
-      if (changelist.trim().equalsIgnoreCase("default")) {
-        return IChangelist.DEFAULT;
-      }
-      try {
-        int changelistId = Integer.parseInt(changelist);
-        if (changelistId < 0) {
-          return IChangelist.UNKNOWN;
-        }
-        return changelistId;
-      } catch (NumberFormatException e) {
-        // Suppress error
-      }
-    }
-    return IChangelist.UNKNOWN;
-  }
-
-  /**
    * Perforce wildcards expansion.
    *
    * @param filePath the file path
    * @return the string
    */
-  public static String encodeWildcards(String filePath) {
-    String path = new String();
+  public static String encodeWildcards(@Nullable String filePath) {
     if (filePath != null) {
-      path = filePath.replaceAll("%", "%25").replaceAll("\\*", "%2A").replaceAll("#", "%23").replaceAll("@", "%40");
+      return filePath.replaceAll("%", "%25").replaceAll("\\*", "%2A").replaceAll("#", "%23").replaceAll("@", "%40");
     }
-    return path;
+    return "";
   }
 
-  /**
-   * Checks if is empty.
-   *
-   * @param value
-   *            the value
-   * @return true, if is empty
-   */
-  public static boolean isEmpty(String value) {
-    if (value == null || value.trim().length() == 0) {
-      return true;
-    }
-    return false;
-  }
 }

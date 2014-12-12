@@ -33,7 +33,7 @@ import java.util.Map;
 /**
  * This class handles the result from the Perforce annotate command.
  */
-public class P4BlameResult {
+public class PerforceBlameResult {
 
   /** The success. */
   private boolean success = true;

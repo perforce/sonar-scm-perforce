@@ -49,12 +49,12 @@ public class PerforceBlameCommand extends BlameCommand {
   public void blame(BlameInput input, BlameOutput output) {
     FileSystem fs = input.fileSystem();
     LOG.debug("Working directory: " + fs.baseDir().getAbsolutePath());
-    P4Executor executor = new P4Executor(config, fs.baseDir());
+    PerforceExecutor executor = new PerforceExecutor(config, fs.baseDir());
     try {
-      P4BlameResult p4Result = new P4BlameResult();
+      PerforceBlameResult p4Result = new PerforceBlameResult();
       for (InputFile inputFile : input.filesToBlame()) {
         List<IFileSpec> fileSpecs = FileSpecBuilder
-          .makeFileSpecList(new String[] {P4Executor.encodeWildcards(inputFile.absolutePath())});
+          .makeFileSpecList(new String[] {PerforceExecutor.encodeWildcards(inputFile.absolutePath())});
         try {
           // Get file annotations
           GetFileAnnotationsOptions getFileAnnotationsOptions = new GetFileAnnotationsOptions();
@@ -84,7 +84,7 @@ public class PerforceBlameCommand extends BlameCommand {
         output.blameResult(inputFile, lines);
       }
     } finally {
-      executor.cleanP4();
+      executor.clean();
     }
   }
 
