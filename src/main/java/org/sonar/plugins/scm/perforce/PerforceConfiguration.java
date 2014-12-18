@@ -37,13 +37,12 @@ public class PerforceConfiguration implements BatchComponent {
 
   private static final String FALSE = "false";
   private static final String CATEGORY_PERFORCE = "Perforce";
-  public static final String PORT_PROP_KEY = "sonar.perforce.port";
-  public static final String USESSL_PROP_KEY = "sonar.perforce.useSsl";
-  public static final String USER_PROP_KEY = "sonar.perforce.username";
-  public static final String PASSWORD_PROP_KEY = "sonar.perforce.password.secured";
-  public static final String CLIENT_PROP_KEY = "sonar.perforce.clientName";
-
-  public static final String CHARSET_PROP_KEY = "sonar.perforce.charset";
+  static final String PORT_PROP_KEY = "sonar.perforce.port";
+  private static final String USESSL_PROP_KEY = "sonar.perforce.useSsl";
+  private static final String USER_PROP_KEY = "sonar.perforce.username";
+  private static final String PASSWORD_PROP_KEY = "sonar.perforce.password.secured";
+  static final String CLIENT_PROP_KEY = "sonar.perforce.clientName";
+  private static final String CHARSET_PROP_KEY = "sonar.perforce.charset";
 
   private final Settings settings;
 
@@ -82,7 +81,7 @@ public class PerforceConfiguration implements BatchComponent {
         .build(),
       PropertyDefinition.builder(CLIENT_PROP_KEY)
         .name("Client workspace name")
-        .description("Name of the workspace the project belong to")
+        .description("Name of the workspace the project belongs to")
         .type(PropertyType.STRING)
         .onlyOnQualifiers(Qualifiers.PROJECT)
         .category(CoreProperties.CATEGORY_SCM)
