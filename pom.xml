@@ -11,7 +11,7 @@
   <version>1.0-SNAPSHOT</version>
   <packaging>sonar-plugin</packaging>
   <description>Perforce SCM Provider.</description>
-  <url>TODO</url>
+  <url>http://redirect.sonarsource.com/plugins/scmperforce.html</url>
   <inceptionYear>2014</inceptionYear>
 
   <organization>
@@ -39,7 +39,6 @@
     <connection>scm:git:git@github.com:SonarCommunity/sonar-scm-perforce.git</connection>
     <developerConnection>scm:git:git@github.com:SonarCommunity/sonar-scm-perforce.git</developerConnection>
     <url>https://github.com/SonarCommunity/sonar-scm-perforce</url>
-    <tag>HEAD</tag>
   </scm>
   
   <issueManagement>
@@ -53,7 +52,7 @@
   </ciManagement>
 
   <properties>
-    <sonar.buildVersion>5.0-SNAPSHOT</sonar.buildVersion>
+    <sonar.buildVersion>5.0-RC3</sonar.buildVersion>
     <sonar.pluginName>Perforce</sonar.pluginName>
     <sonar.pluginClass>org.sonar.plugins.scm.perforce.PerforcePlugin</sonar.pluginClass>
   </properties>
