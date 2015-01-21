@@ -51,8 +51,8 @@ public class PerforceBlameCommand extends BlameCommand {
     LOG.debug("Working directory: " + fs.baseDir().getAbsolutePath());
     PerforceExecutor executor = new PerforceExecutor(config, fs.baseDir());
     try {
-      PerforceBlameResult p4Result = new PerforceBlameResult();
       for (InputFile inputFile : input.filesToBlame()) {
+        PerforceBlameResult p4Result = new PerforceBlameResult();
         List<IFileSpec> fileSpecs = FileSpecBuilder
           .makeFileSpecList(new String[] {PerforceExecutor.encodeWildcards(inputFile.absolutePath())});
         try {
