@@ -53,8 +53,7 @@ public class PerforceBlameCommand extends BlameCommand {
     try {
       for (InputFile inputFile : input.filesToBlame()) {
         PerforceBlameResult p4Result = new PerforceBlameResult();
-        List<IFileSpec> fileSpecs = FileSpecBuilder
-          .makeFileSpecList(new String[] {PerforceExecutor.encodeWildcards(inputFile.absolutePath())});
+        List<IFileSpec> fileSpecs = createFileSpec(inputFile);
         try {
           // Get file annotations
           GetFileAnnotationsOptions getFileAnnotationsOptions = new GetFileAnnotationsOptions();
@@ -86,6 +85,19 @@ public class PerforceBlameCommand extends BlameCommand {
     } finally {
       executor.clean();
     }
+  }
+
+  /**
+   * Creates file spec for the specified file taking into an account that we are interested in a revision that we have
+   * in the current client workspace.
+   * @param inputFile file to create file spec for
+   * @return list of file specs containing the only one spec for the specified file.
+   */
+  private List<IFileSpec> createFileSpec(InputFile inputFile) {
+    List<IFileSpec> fileSpecs = FileSpecBuilder
+      .makeFileSpecList(new String[]{PerforceExecutor.encodeWildcards(inputFile.absolutePath())});
+    fileSpecs.get(0).setEndRevision(IFileSpec.HAVE_REVISION);
+    return fileSpecs;
   }
 
 }
