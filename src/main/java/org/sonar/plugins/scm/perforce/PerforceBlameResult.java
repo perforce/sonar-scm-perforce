@@ -31,18 +31,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This class handles the result from the Perforce annotate command.
+ * This class handles the result from the Perforce annotate and revision history commands and constructs blame lines
+ * for SonarQube.
  */
 public class PerforceBlameResult {
 
-  /** The success. */
-  private boolean success = true;
-
-  /** The command output. */
-  private String commandOutput = "";
-
-  /** The lines. */
-  private List<BlameLine> blameLines = new ArrayList<BlameLine>();
+  /**
+   * Change lists
+   */
+  private List<String> changeLists = new ArrayList<String>();
 
   /** The dates. */
   private Map<String, Date> dates = new HashMap<String, Date>();
@@ -51,35 +48,7 @@ public class PerforceBlameResult {
   private Map<String, String> authors = new HashMap<String, String>();
 
   /**
-   * Gets the command output.
-   *
-   * @return the command output
-   */
-  public String getCommandOutput() {
-    return commandOutput;
-  }
-
-  /**
-   * Checks if is success.
-   *
-   * @return true, if is success
-   */
-  public boolean isSuccess() {
-    return success;
-  }
-
-  /**
-   * Sets the success.
-   *
-   * @param success
-   *            the new success
-   */
-  public void setSuccess(boolean success) {
-    this.success = success;
-  }
-
-  /**
-   * Extracts file annotation info as BlameLine objects.
+   * Extracts file annotation info.
    *
    * @param fileAnnotations
    *            the file annotations
@@ -88,63 +57,46 @@ public class PerforceBlameResult {
     if (fileAnnotations != null) {
       for (IFileAnnotation fileAnnotation : fileAnnotations) {
         if (fileAnnotation != null) {
-          blameLines.add(new BlameLine().revision(String.valueOf(fileAnnotation.getUpper())));
+          changeLists.add(String.valueOf(fileAnnotation.getUpper()));
         }
       }
     }
   }
 
   /**
-   * Extracts dates and authors from revision history map.
+   * Extracts dates, authors and revision number from revision history map.
    *
    * @param revisionMap
    *            the revision map
    */
-  public void processRevisionHistory(
-    Map<IFileSpec, List<IFileRevisionData>> revisionMap) {
+  public void processRevisionHistory(Map<IFileSpec, List<IFileRevisionData>> revisionMap) {
     if (revisionMap != null) {
-      for (Map.Entry<IFileSpec, List<IFileRevisionData>> entry : revisionMap
-        .entrySet()) {
-        List<IFileRevisionData> revisions = entry.getValue();
-        for (IFileRevisionData revision : revisions) {
-          dates.put(String.valueOf(revision.getRevision()),
-            revision.getDate());
-          authors.put(String.valueOf(revision.getRevision()),
-            revision.getUserName());
+      for (Map.Entry<IFileSpec, List<IFileRevisionData>> entry : revisionMap.entrySet()) {
+        List<IFileRevisionData> changes = entry.getValue();
+        for (IFileRevisionData change : changes) {
+          dates.put(String.valueOf(change.getChangelistId()), change.getDate());
+          authors.put(String.valueOf(change.getChangelistId()), change.getUserName());
         }
       }
     }
   }
 
   /**
-   * Gets the blame lines.
-   *
-   * @return the blame lines
+   * Combine results of annotation and revision history commands and return blame lines.
+   * @return blane lines with revisionm date and author fields filled.
    */
-  public List<BlameLine> getBlameLines() {
-    return blameLines;
-  }
+  public List<BlameLine> createBlameLines() {
+    List<BlameLine> lines = new ArrayList<BlameLine>(changeLists.size() + 1);
 
-  /**
-   * Gets the author.
-   *
-   * @param revision
-   *            the revision
-   * @return the author
-   */
-  public String getAuthor(String revision) {
-    return authors.get(revision);
-  }
+    for (String changeList : changeLists) {
+      BlameLine line = new BlameLine();
+      line.revision(changeList);
+      line.date(dates.get(changeList));
+      line.author(authors.get(changeList));
+      lines.add(line);
+    }
 
-  /**
-   * Gets the date.
-   *
-   * @param revision
-   *            the revision
-   * @return the date
-   */
-  public Date getDate(String revision) {
-    return dates.get(revision);
+    return lines;
   }
 
 }

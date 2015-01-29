@@ -56,27 +56,25 @@ public class PerforceBlameCommand extends BlameCommand {
         List<IFileSpec> fileSpecs = createFileSpec(inputFile);
         try {
           // Get file annotations
-          GetFileAnnotationsOptions getFileAnnotationsOptions = new GetFileAnnotationsOptions();
-          List<IFileAnnotation> fileAnnotations = executor.getServer().getFileAnnotations(fileSpecs, getFileAnnotationsOptions);
+          List<IFileAnnotation> fileAnnotations = executor.getServer().getFileAnnotations(fileSpecs,
+                  getFileAnnotationOptions());
+
           // Process the file annotations as blame lines
           p4Result.processBlameLines(fileAnnotations);
+
           // Get revision history
-          GetRevisionHistoryOptions getRevisionHistoryOptions = new GetRevisionHistoryOptions();
-          Map<IFileSpec, List<IFileRevisionData>> revisionMap = executor.getServer().getRevisionHistory(fileSpecs, getRevisionHistoryOptions);
+          Map<IFileSpec, List<IFileRevisionData>> revisionMap = executor.getServer().getRevisionHistory(fileSpecs,
+                  getRevisionHistoryOptions());
+
           // Process the revision data map
           p4Result.processRevisionHistory(revisionMap);
         } catch (P4JavaException e) {
           throw new IllegalStateException(e.getLocalizedMessage(), e);
         }
+
         // Combine the results
-        List<BlameLine> lines = p4Result.getBlameLines();
-        for (int i = 0; i < lines.size(); i++) {
-          BlameLine line = (BlameLine) lines.get(i);
-          String revision = line.revision();
-          line.author(p4Result.getAuthor(revision));
-          line.date(p4Result.getDate(revision));
-        }
-        if (lines.size() == inputFile.lines() - 1) {
+        List<BlameLine> lines = p4Result.createBlameLines();
+        if (lines.size() == (inputFile.lines() - 1)) {
           // SONARPLUGINS-3097 Perforce do not report blame on last empty line
           lines.add(lines.get(lines.size() - 1));
         }
@@ -85,6 +83,27 @@ public class PerforceBlameCommand extends BlameCommand {
     } finally {
       executor.clean();
     }
+  }
+
+  /**
+   * Creating options for revision history command (filelog).
+   * @return options for requests.
+   */
+  private GetRevisionHistoryOptions getRevisionHistoryOptions() {
+    GetRevisionHistoryOptions options = new GetRevisionHistoryOptions();
+    options.setIncludeInherited(true);
+    return options;
+  }
+
+  /**
+   * Creating options for file annotation command.
+   * @return options for requests.
+   */
+  private GetFileAnnotationsOptions getFileAnnotationOptions() {
+    GetFileAnnotationsOptions options = new GetFileAnnotationsOptions();
+    options.setUseChangeNumbers(true);
+    options.setFollowBranches(true);
+    return options;
   }
 
   /**
