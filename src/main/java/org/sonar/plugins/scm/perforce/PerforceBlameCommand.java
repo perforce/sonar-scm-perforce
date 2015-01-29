@@ -71,7 +71,7 @@ public class PerforceBlameCommand extends BlameCommand {
         // Combine the results
         List<BlameLine> lines = p4Result.getBlameLines();
         for (int i = 0; i < lines.size(); i++) {
-          BlameLine line = (BlameLine) lines.get(i);
+          BlameLine line = lines.get(i);
           String revision = line.revision();
           line.author(p4Result.getAuthor(revision));
           line.date(p4Result.getDate(revision));
@@ -95,7 +95,7 @@ public class PerforceBlameCommand extends BlameCommand {
    */
   private List<IFileSpec> createFileSpec(InputFile inputFile) {
     List<IFileSpec> fileSpecs = FileSpecBuilder
-      .makeFileSpecList(new String[]{PerforceExecutor.encodeWildcards(inputFile.absolutePath())});
+      .makeFileSpecList(new String[] {PerforceExecutor.encodeWildcards(inputFile.absolutePath())});
     fileSpecs.get(0).setEndRevision(IFileSpec.HAVE_REVISION);
     return fileSpecs;
   }
