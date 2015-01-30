@@ -83,7 +83,7 @@ public class PerforceBlameResult {
 
   /**
    * Combine results of annotation and revision history commands and return blame lines.
-   * @return blane lines with revisionm date and author fields filled.
+   * @return blame lines with revision date and author fields filled.
    */
   public List<BlameLine> createBlameLines() {
     List<BlameLine> lines = new ArrayList<BlameLine>(changeLists.size() + 1);
