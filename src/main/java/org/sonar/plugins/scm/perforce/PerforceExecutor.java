@@ -144,15 +144,35 @@ public class PerforceExecutor {
       String username = config.username();
       if (username != null) {
         server.setUserName(username);
-        // Login to the server with a password.
-        // Password can be null if it is not needed (i.e. SSO logins).
-        server.login(config.password(), null);
+        // Check if user is already logged (reuse previous ticket)
+        if (!isLogin(server)) {
+          // Login to the server with a password.
+          // Password can be null if it is not needed (i.e. SSO logins).
+          server.login(config.password(), null);
+        }
       }
     } catch (URISyntaxException e) {
       throw new IllegalArgumentException(e.getLocalizedMessage(), e);
     } catch (P4JavaException e) {
       throw new IllegalStateException(e.getLocalizedMessage(), e);
     }
+  }
+
+  private boolean isLogin(IOptionsServer connection) throws P4JavaException {
+    String status = connection.getLoginStatus();
+    LOG.debug(status);
+    if (status.contains("not necessary")) {
+      return true;
+    }
+    if (status.contains("ticket expires in")) {
+      return true;
+    }
+    // If there is a broker or something else that swallows the message
+    if (status.isEmpty()) {
+      return true;
+    }
+
+    return false;
   }
 
   private void createServer() throws URISyntaxException, P4JavaException {
