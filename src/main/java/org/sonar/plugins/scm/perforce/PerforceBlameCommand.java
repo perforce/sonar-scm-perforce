@@ -103,6 +103,7 @@ public class PerforceBlameCommand extends BlameCommand {
     GetFileAnnotationsOptions options = new GetFileAnnotationsOptions();
     options.setUseChangeNumbers(true);
     options.setFollowBranches(true);
+    options.setIgnoreWhitespaceChanges(true);
     return options;
   }
 
