@@ -24,11 +24,7 @@ import com.perforce.p4java.core.file.IFileRevisionData;
 import com.perforce.p4java.core.file.IFileSpec;
 import org.sonar.api.batch.scm.BlameLine;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This class handles the result from the Perforce annotate and revision history commands and constructs blame lines
@@ -57,7 +53,7 @@ public class PerforceBlameResult {
     if (fileAnnotations != null) {
       for (IFileAnnotation fileAnnotation : fileAnnotations) {
         if (fileAnnotation != null) {
-          changeLists.add(String.valueOf(fileAnnotation.getUpper()));
+          changeLists.add(String.valueOf(fileAnnotation.getLower()));
         }
       }
     }
