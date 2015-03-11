@@ -19,26 +19,24 @@
  */
 package org.sonar.plugins.scm.perforce;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
+import org.sonar.api.config.PropertyDefinitions;
+import org.sonar.api.config.Settings;
 
 import static org.fest.assertions.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
-public class PerforceScmProviderTest {
-
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+public class PerforceConfigurationTest {
 
   @Test
-  public void sanityCheck() {
-    assertThat(new PerforceScmProvider(null).key()).isEqualTo("perforce");
-    PerforceBlameCommand blameCommand = mock(PerforceBlameCommand.class);
-    assertThat(new PerforceScmProvider(blameCommand).blameCommand()).isEqualTo(blameCommand);
-  }
+  public void checkDefaultValues() {
+    Settings settings = new Settings(new PropertyDefinitions(PerforceConfiguration.getProperties()));
 
+    PerforceConfiguration config = new PerforceConfiguration(settings);
+    assertThat(config.charset()).isNull();
+    assertThat(config.clientName()).isNull();
+    assertThat(config.port()).isNull();
+    assertThat(config.username()).isNull();
+    assertThat(config.password()).isNull();
+    assertThat(config.useSsl()).isFalse();
+  }
 }
