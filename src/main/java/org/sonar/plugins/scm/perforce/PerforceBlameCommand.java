@@ -89,7 +89,7 @@ public class PerforceBlameCommand extends BlameCommand {
    * Creating options for revision history command (filelog).
    * @return options for requests.
    */
-  private GetRevisionHistoryOptions getRevisionHistoryOptions() {
+  private static GetRevisionHistoryOptions getRevisionHistoryOptions() {
     GetRevisionHistoryOptions options = new GetRevisionHistoryOptions();
     options.setIncludeInherited(true);
     return options;
@@ -99,7 +99,7 @@ public class PerforceBlameCommand extends BlameCommand {
    * Creating options for file annotation command.
    * @return options for requests.
    */
-  private GetFileAnnotationsOptions getFileAnnotationOptions() {
+  private static GetFileAnnotationsOptions getFileAnnotationOptions() {
     GetFileAnnotationsOptions options = new GetFileAnnotationsOptions();
     options.setUseChangeNumbers(true);
     options.setFollowBranches(true);
@@ -113,7 +113,7 @@ public class PerforceBlameCommand extends BlameCommand {
    * @param inputFile file to create file spec for
    * @return list of file specs containing the only one spec for the specified file.
    */
-  private List<IFileSpec> createFileSpec(InputFile inputFile) {
+  private static List<IFileSpec> createFileSpec(InputFile inputFile) {
     List<IFileSpec> fileSpecs = FileSpecBuilder
       .makeFileSpecList(new String[] {PerforceExecutor.encodeWildcards(inputFile.absolutePath())});
     fileSpecs.get(0).setEndRevision(IFileSpec.HAVE_REVISION);
