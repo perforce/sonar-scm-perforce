@@ -22,9 +22,12 @@ package org.sonar.plugins.scm.perforce;
 import com.perforce.p4java.core.file.IFileAnnotation;
 import com.perforce.p4java.core.file.IFileRevisionData;
 import com.perforce.p4java.core.file.IFileSpec;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.sonar.api.batch.scm.BlameLine;
-
-import java.util.*;
 
 /**
  * This class handles the result from the Perforce annotate and revision history commands and constructs blame lines

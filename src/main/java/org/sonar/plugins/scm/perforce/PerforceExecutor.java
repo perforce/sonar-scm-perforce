@@ -32,17 +32,15 @@ import com.perforce.p4java.option.server.TrustOptions;
 import com.perforce.p4java.server.IOptionsServer;
 import com.perforce.p4java.server.ServerFactory;
 import com.perforce.p4java.server.callback.ICommandCallback;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.sonar.api.utils.MessageException;
-
-import javax.annotation.Nullable;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.List;
+import javax.annotation.Nullable;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.sonar.api.utils.MessageException;
 
 public class PerforceExecutor {
 
@@ -158,7 +156,7 @@ public class PerforceExecutor {
     }
   }
 
-  private boolean isLogin(IOptionsServer connection) throws P4JavaException {
+  private static boolean isLogin(IOptionsServer connection) throws P4JavaException {
     String status = connection.getLoginStatus();
     LOG.debug(status);
     if (status.contains("not necessary")) {
