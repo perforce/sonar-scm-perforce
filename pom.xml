@@ -10,7 +10,7 @@
   <groupId>org.sonarsource.scm.perforce</groupId>
   <artifactId>sonar-scm-perforce-plugin</artifactId>
   <name>SonarQube :: Plugins :: SCM :: Perforce</name>
-  <version>1.2-SNAPSHOT</version>
+  <version>1.2</version>
   <packaging>sonar-plugin</packaging>
   <description>Perforce SCM Provider.</description>
   <url>http://redirect.sonarsource.com/plugins/scmperforce.html</url>
@@ -41,6 +41,7 @@
     <connection>scm:git:git@github.com:SonarCommunity/sonar-scm-perforce.git</connection>
     <developerConnection>scm:git:git@github.com:SonarCommunity/sonar-scm-perforce.git</developerConnection>
     <url>https://github.com/SonarCommunity/sonar-scm-perforce</url>
+    <tag>1.2</tag>
   </scm>
   
   <issueManagement>
