@@ -19,6 +19,7 @@
  */
 package org.sonar.plugins.scm.perforce;
 
+import com.perforce.p4java.impl.mapbased.rpc.RpcPropertyDefs;
 import org.junit.Test;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.config.Settings;
@@ -38,5 +39,6 @@ public class PerforceConfigurationTest {
     assertThat(config.username()).isNull();
     assertThat(config.password()).isNull();
     assertThat(config.useSsl()).isFalse();
+    assertThat(config.sockSoTimeout()).isEqualTo(RpcPropertyDefs.RPC_SOCKET_SO_TIMEOUT_DEFAULT);
   }
 }
