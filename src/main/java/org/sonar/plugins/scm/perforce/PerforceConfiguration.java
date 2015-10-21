@@ -20,6 +20,7 @@
 package org.sonar.plugins.scm.perforce;
 
 import com.google.common.collect.ImmutableList;
+import com.perforce.p4java.impl.mapbased.rpc.RpcPropertyDefs;
 import org.sonar.api.BatchComponent;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.PropertyType;
@@ -43,6 +44,7 @@ public class PerforceConfiguration implements BatchComponent {
   private static final String PASSWORD_PROP_KEY = "sonar.perforce.password.secured";
   static final String CLIENT_PROP_KEY = "sonar.perforce.clientName";
   private static final String CHARSET_PROP_KEY = "sonar.perforce.charset";
+  private static final String SOCKSOTIMEOUT_PROP_KEY = "sonar.perforce.sockSoTimeout";
 
   private final Settings settings;
 
@@ -105,6 +107,15 @@ public class PerforceConfiguration implements BatchComponent {
         .category(CoreProperties.CATEGORY_SCM)
         .subCategory(CATEGORY_PERFORCE)
         .index(5)
+        .build(),
+      PropertyDefinition.builder(SOCKSOTIMEOUT_PROP_KEY)
+        .name("Perforce socket read timeout")
+        .description("Sets the socket read timeout for communicating with the Perforce service (milliseconds)")
+        .type(PropertyType.INTEGER)
+        .defaultValue(String.valueOf(RpcPropertyDefs.RPC_SOCKET_SO_TIMEOUT_DEFAULT))
+        .category(CoreProperties.CATEGORY_SCM)
+        .subCategory(CATEGORY_PERFORCE)
+        .index(6)
         .build());
   }
 
@@ -135,6 +146,10 @@ public class PerforceConfiguration implements BatchComponent {
   @CheckForNull
   public String clientName() {
     return settings.getString(CLIENT_PROP_KEY);
+  }
+
+  public int sockSoTimeout() {
+    return settings.getInt(SOCKSOTIMEOUT_PROP_KEY);
   }
 
 }
