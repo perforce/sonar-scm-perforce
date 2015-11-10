@@ -34,7 +34,6 @@ import com.perforce.p4java.server.IOptionsServer;
 import com.perforce.p4java.server.ServerFactory;
 import com.perforce.p4java.server.callback.ICommandCallback;
 import java.io.File;
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Properties;
@@ -247,15 +246,6 @@ public class PerforceExecutor {
    */
   private void initClient(File workDir) {
 
-    String rootDir = workDir.getAbsolutePath();
-    try {
-      rootDir = workDir.getCanonicalPath();
-    } catch (IOException ex) {
-      throw new IllegalStateException("Unable to compute rootDir", ex);
-    }
-
-    rootDir = encodeWildcards(rootDir);
-
     try {
       // Get an instance of the Perforce client.
       String p4ClientName = config.clientName();
@@ -369,7 +359,7 @@ public class PerforceExecutor {
    * @param filePath the file path
    * @return the string
    */
-  public static String encodeWildcards(@Nullable String filePath) {
+  static String encodeWildcards(@Nullable String filePath) {
     if (filePath != null) {
       return filePath.replaceAll("%", "%25").replaceAll("\\*", "%2A").replaceAll("#", "%23").replaceAll("@", "%40");
     }

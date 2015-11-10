@@ -38,13 +38,13 @@ public class PerforceBlameResult {
   /**
    * Change lists
    */
-  private List<String> changeLists = new ArrayList<String>();
+  private List<String> changeLists = new ArrayList<>();
 
   /** The dates. */
-  private Map<String, Date> dates = new HashMap<String, Date>();
+  private Map<String, Date> dates = new HashMap<>();
 
   /** The authors. */
-  private Map<String, String> authors = new HashMap<String, String>();
+  private Map<String, String> authors = new HashMap<>();
 
   /**
    * Extracts file annotation info.
@@ -85,7 +85,7 @@ public class PerforceBlameResult {
    * @return blame lines with revision date and author fields filled.
    */
   public List<BlameLine> createBlameLines() {
-    List<BlameLine> lines = new ArrayList<BlameLine>(changeLists.size() + 1);
+    List<BlameLine> lines = new ArrayList<>(changeLists.size() + 1);
 
     for (String changeList : changeLists) {
       BlameLine line = new BlameLine();
