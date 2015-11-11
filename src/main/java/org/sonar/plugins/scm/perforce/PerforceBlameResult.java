@@ -27,6 +27,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.scm.BlameLine;
 
 /**
@@ -34,6 +37,8 @@ import org.sonar.api.batch.scm.BlameLine;
  * for SonarQube.
  */
 public class PerforceBlameResult {
+
+  private static final Logger LOG = LoggerFactory.getLogger(PerforceBlameResult.class);
 
   /**
    * Change lists
@@ -92,7 +97,13 @@ public class PerforceBlameResult {
     for (String changeList : changeLists) {
       BlameLine line = new BlameLine();
       line.revision(changeList);
-      line.date(dates.get(changeList));
+      Date date = dates.get(changeList);
+      if (date == null) {
+        LOG.warn("Unable to find date for changeset #" + changeList);
+        continue;
+      }
+      line.revision(changeList);
+      line.date(date);
       line.author(authors.get(changeList));
       lines.add(line);
     }
