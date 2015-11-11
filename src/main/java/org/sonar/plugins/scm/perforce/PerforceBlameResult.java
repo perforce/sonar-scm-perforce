@@ -72,9 +72,11 @@ public class PerforceBlameResult {
     if (revisionMap != null) {
       for (Map.Entry<IFileSpec, List<IFileRevisionData>> entry : revisionMap.entrySet()) {
         List<IFileRevisionData> changes = entry.getValue();
-        for (IFileRevisionData change : changes) {
-          dates.put(String.valueOf(change.getChangelistId()), change.getDate());
-          authors.put(String.valueOf(change.getChangelistId()), change.getUserName());
+        if (changes != null) {
+          for (IFileRevisionData change : changes) {
+            dates.put(String.valueOf(change.getChangelistId()), change.getDate());
+            authors.put(String.valueOf(change.getChangelistId()), change.getUserName());
+          }
         }
       }
     }
