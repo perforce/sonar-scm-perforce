@@ -27,6 +27,6 @@ public class PerforcePluginTest {
 
   @Test
   public void getExtensions() {
-    assertThat(new PerforcePlugin().getExtensions()).hasSize(3);
+    assertThat(new PerforcePlugin().getExtensions()).hasSize(10);
   }
 }

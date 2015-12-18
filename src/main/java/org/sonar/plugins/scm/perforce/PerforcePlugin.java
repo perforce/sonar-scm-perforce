@@ -22,16 +22,20 @@ package org.sonar.plugins.scm.perforce;
 import com.google.common.collect.ImmutableList;
 import org.sonar.api.SonarPlugin;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class PerforcePlugin extends SonarPlugin {
 
   @Override
   public List getExtensions() {
-    return ImmutableList.of(
+    List result = new ArrayList();
+    result.addAll(ImmutableList.of(
       PerforceScmProvider.class,
       PerforceBlameCommand.class,
-      PerforceConfiguration.class);
+      PerforceConfiguration.class));
+    result.addAll(PerforceConfiguration.getProperties());
+    return result;
   }
 
 }
