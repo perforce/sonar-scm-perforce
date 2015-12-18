@@ -204,7 +204,7 @@ public class PerforceExecutor {
 
     @Override
     public void receivedServerInfoLine(int key, String infoLine) {
-      LOG.info(infoLine);
+      LOG.debug(infoLine);
     }
 
     @Override
@@ -214,12 +214,12 @@ public class PerforceExecutor {
 
     @Override
     public void issuingServerCommand(int key, String command) {
-      LOG.info(command);
+      LOG.debug(command);
     }
 
     @Override
     public void completedServerCommand(int key, long millisecsTaken) {
-      LOG.info("Command completed in " + millisecsTaken + "ms");
+      LOG.debug("Command completed in " + millisecsTaken + "ms");
     }
   }
 

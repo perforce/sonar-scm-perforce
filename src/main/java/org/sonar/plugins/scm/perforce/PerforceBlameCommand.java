@@ -19,22 +19,29 @@
  */
 package org.sonar.plugins.scm.perforce;
 
-import com.perforce.p4java.core.file.FileSpecBuilder;
+import com.google.common.annotations.VisibleForTesting;
+import com.perforce.p4java.core.file.FileSpecOpStatus;
 import com.perforce.p4java.core.file.IFileAnnotation;
 import com.perforce.p4java.core.file.IFileRevisionData;
 import com.perforce.p4java.core.file.IFileSpec;
 import com.perforce.p4java.exception.P4JavaException;
+import com.perforce.p4java.impl.generic.core.file.FileSpec;
 import com.perforce.p4java.option.server.GetFileAnnotationsOptions;
 import com.perforce.p4java.option.server.GetRevisionHistoryOptions;
+import com.perforce.p4java.server.IOptionsServer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.scm.BlameCommand;
 import org.sonar.api.batch.scm.BlameLine;
-
-import java.util.List;
-import java.util.Map;
 
 public class PerforceBlameCommand extends BlameCommand {
 
@@ -52,37 +59,64 @@ public class PerforceBlameCommand extends BlameCommand {
     PerforceExecutor executor = new PerforceExecutor(config, fs.baseDir());
     try {
       for (InputFile inputFile : input.filesToBlame()) {
-        PerforceBlameResult p4Result = new PerforceBlameResult();
-        List<IFileSpec> fileSpecs = createFileSpec(inputFile);
-        try {
-          // Get file annotations
-          List<IFileAnnotation> fileAnnotations = executor.getServer().getFileAnnotations(fileSpecs,
-            getFileAnnotationOptions());
-
-          // Process the file annotations as blame lines
-          p4Result.processBlameLines(fileAnnotations);
-
-          // Get revision history
-          Map<IFileSpec, List<IFileRevisionData>> revisionMap = executor.getServer().getRevisionHistory(fileSpecs,
-            getRevisionHistoryOptions());
-
-          // Process the revision data map
-          p4Result.processRevisionHistory(revisionMap);
-        } catch (P4JavaException e) {
-          throw new IllegalStateException(e.getLocalizedMessage(), e);
-        }
-
-        // Combine the results
-        List<BlameLine> lines = p4Result.createBlameLines();
-        if (lines.size() == (inputFile.lines() - 1)) {
-          // SONARPLUGINS-3097 Perforce do not report blame on last empty line
-          lines.add(lines.get(lines.size() - 1));
-        }
-        output.blameResult(inputFile, lines);
+        blame(inputFile, executor.getServer(), output);
       }
     } finally {
       executor.clean();
     }
+  }
+
+  @VisibleForTesting
+  void blame(InputFile inputFile, IOptionsServer server, BlameOutput output) {
+    IFileSpec fileSpec = createFileSpec(inputFile);
+    List<IFileAnnotation> fileAnnotations;
+    List<IFileRevisionData> revisions;
+    try {
+      // Get file annotations
+      List<IFileSpec> fileSpecs = Arrays.asList(fileSpec);
+      fileAnnotations = server.getFileAnnotations(fileSpecs, getFileAnnotationOptions());
+      if (fileAnnotations.size() == 1 && fileAnnotations.get(0).getDepotPath() == null) {
+        LOG.debug("File " + inputFile + " is not submitted. Skipping it.");
+        return;
+      }
+      // Get revision history
+      Map<IFileSpec, List<IFileRevisionData>> revisionMap = server.getRevisionHistory(fileSpecs, getRevisionHistoryOptions());
+      Entry<IFileSpec, List<IFileRevisionData>> singleEntry = revisionMap.entrySet().iterator().next();
+      IFileSpec resultFileSpec = singleEntry.getKey();
+      if (!FileSpecOpStatus.VALID.equals(resultFileSpec.getOpStatus()) && !FileSpecOpStatus.INFO.equals(resultFileSpec.getOpStatus())) {
+        String statusMessage = resultFileSpec.getStatusMessage();
+        LOG.debug("Unable to get revisions of file " + inputFile + " [" + statusMessage + "]. Skipping it.");
+        return;
+      }
+      revisions = singleEntry.getValue();
+    } catch (P4JavaException e) {
+      throw new IllegalStateException(e.getLocalizedMessage(), e);
+    }
+
+    computeBlame(inputFile, output, fileAnnotations, revisions);
+  }
+
+  private void computeBlame(InputFile inputFile, BlameOutput output, List<IFileAnnotation> fileAnnotations, List<IFileRevisionData> revisions) {
+    Map<Integer, Date> changelistDates = new HashMap<>();
+    Map<Integer, String> changelistAuthors = new HashMap<>();
+    for (IFileRevisionData revision : revisions) {
+      changelistDates.put(revision.getChangelistId(), revision.getDate());
+      changelistAuthors.put(revision.getChangelistId(), revision.getUserName());
+    }
+
+    List<BlameLine> lines = new ArrayList<>();
+    for (IFileAnnotation fileAnnotation : fileAnnotations) {
+      int lowerChangelistId = fileAnnotation.getLower();
+      lines.add(new BlameLine()
+        .revision(String.valueOf(lowerChangelistId))
+        .date(changelistDates.get(lowerChangelistId))
+        .author(changelistAuthors.get(lowerChangelistId)));
+    }
+    if (lines.size() == (inputFile.lines() - 1)) {
+      // SONARPLUGINS-3097 Perforce do not report blame on last empty line
+      lines.add(lines.get(lines.size() - 1));
+    }
+    output.blameResult(inputFile, lines);
   }
 
   /**
@@ -111,13 +145,11 @@ public class PerforceBlameCommand extends BlameCommand {
    * Creates file spec for the specified file taking into an account that we are interested in a revision that we have
    * in the current client workspace.
    * @param inputFile file to create file spec for
-   * @return list of file specs containing the only one spec for the specified file.
    */
-  private static List<IFileSpec> createFileSpec(InputFile inputFile) {
-    List<IFileSpec> fileSpecs = FileSpecBuilder
-      .makeFileSpecList(new String[] {PerforceExecutor.encodeWildcards(inputFile.absolutePath())});
-    fileSpecs.get(0).setEndRevision(IFileSpec.HAVE_REVISION);
-    return fileSpecs;
+  private static IFileSpec createFileSpec(InputFile inputFile) {
+    IFileSpec fileSpec = new FileSpec(PerforceExecutor.encodeWildcards(inputFile.absolutePath()));
+    fileSpec.setEndRevision(IFileSpec.HAVE_REVISION);
+    return fileSpec;
   }
 
 }
