@@ -19,18 +19,12 @@
  */
 package org.sonar.plugins.scm.perforce;
 
-import com.perforce.p4java.core.file.FileSpecOpStatus;
+import com.perforce.p4java.core.IChangelist;
 import com.perforce.p4java.core.file.IFileAnnotation;
-import com.perforce.p4java.core.file.IFileRevisionData;
-import com.perforce.p4java.core.file.IFileSpec;
 import com.perforce.p4java.option.server.GetFileAnnotationsOptions;
-import com.perforce.p4java.option.server.GetRevisionHistoryOptions;
 import com.perforce.p4java.server.IOptionsServer;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.junit.Test;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.scm.BlameCommand.BlameOutput;
@@ -54,7 +48,7 @@ public class PerforceBlameCommandTest {
     IFileAnnotation annotation = mock(IFileAnnotation.class);
     when(annotation.getDepotPath()).thenReturn(null);
 
-    when(server.getFileAnnotations(anyList(), any(GetFileAnnotationsOptions.class))).thenReturn(Arrays.asList(annotation));
+    when(server.getFileAnnotations(anyList(), any(GetFileAnnotationsOptions.class))).thenReturn(Collections.singletonList(annotation));
 
     command.blame(mock(InputFile.class), server, blameOutput);
 
@@ -71,24 +65,18 @@ public class PerforceBlameCommandTest {
     when(annotation.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
     when(annotation.getLower()).thenReturn(3);
 
-    when(server.getFileAnnotations(anyList(), any(GetFileAnnotationsOptions.class))).thenReturn(Arrays.asList(annotation));
+    when(server.getFileAnnotations(anyList(), any(GetFileAnnotationsOptions.class))).thenReturn(Collections.singletonList(annotation));
 
-    Map<IFileSpec, List<IFileRevisionData>> result = new HashMap<>();
-    IFileSpec fileSpecResult = mock(IFileSpec.class);
-    when(fileSpecResult.getOpStatus()).thenReturn(FileSpecOpStatus.VALID);
-    IFileRevisionData revision3 = mock(IFileRevisionData.class);
-    when(revision3.getChangelistId()).thenReturn(3);
+    IChangelist changelist = mock(IChangelist.class);
     Date date = new Date();
-    when(revision3.getDate()).thenReturn(date);
-    when(revision3.getUserName()).thenReturn("jhenry");
-    result.put(fileSpecResult, Arrays.asList(revision3));
-
-    when(server.getRevisionHistory(anyList(), any(GetRevisionHistoryOptions.class))).thenReturn(result);
+    when(changelist.getDate()).thenReturn(date);
+    when(changelist.getUsername()).thenReturn("jhenry");
+    when(server.getChangelist(3)).thenReturn(changelist);
 
     InputFile inputFile = mock(InputFile.class);
     command.blame(inputFile, server, blameOutput);
 
-    verify(blameOutput).blameResult(inputFile, Arrays.asList(new BlameLine().revision("3").date(date).author("jhenry")));
+    verify(blameOutput).blameResult(inputFile, Collections.singletonList(new BlameLine().revision("3").date(date).author("jhenry")));
   }
 
 }

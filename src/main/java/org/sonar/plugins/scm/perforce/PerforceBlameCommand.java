@@ -20,22 +20,18 @@
 package org.sonar.plugins.scm.perforce;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.perforce.p4java.core.file.FileSpecOpStatus;
+import com.perforce.p4java.core.IChangelist;
 import com.perforce.p4java.core.file.IFileAnnotation;
-import com.perforce.p4java.core.file.IFileRevisionData;
 import com.perforce.p4java.core.file.IFileSpec;
 import com.perforce.p4java.exception.P4JavaException;
 import com.perforce.p4java.impl.generic.core.file.FileSpec;
 import com.perforce.p4java.option.server.GetFileAnnotationsOptions;
-import com.perforce.p4java.option.server.GetRevisionHistoryOptions;
 import com.perforce.p4java.server.IOptionsServer;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.fs.FileSystem;
@@ -47,6 +43,7 @@ public class PerforceBlameCommand extends BlameCommand {
 
   private static final Logger LOG = LoggerFactory.getLogger(PerforceBlameCommand.class);
   private final PerforceConfiguration config;
+  private final Map<Integer, IChangelist> changelistMap = new HashMap<>();
 
   public PerforceBlameCommand(PerforceConfiguration config) {
     this.config = config;
@@ -70,63 +67,43 @@ public class PerforceBlameCommand extends BlameCommand {
   void blame(InputFile inputFile, IOptionsServer server, BlameOutput output) {
     IFileSpec fileSpec = createFileSpec(inputFile);
     List<IFileAnnotation> fileAnnotations;
-    List<IFileRevisionData> revisions;
     try {
       // Get file annotations
-      List<IFileSpec> fileSpecs = Arrays.asList(fileSpec);
+      List<IFileSpec> fileSpecs = Collections.singletonList(fileSpec);
       fileAnnotations = server.getFileAnnotations(fileSpecs, getFileAnnotationOptions());
       if (fileAnnotations.size() == 1 && fileAnnotations.get(0).getDepotPath() == null) {
         LOG.debug("File " + inputFile + " is not submitted. Skipping it.");
         return;
       }
-      // Get revision history
-      Map<IFileSpec, List<IFileRevisionData>> revisionMap = server.getRevisionHistory(fileSpecs, getRevisionHistoryOptions());
-      Entry<IFileSpec, List<IFileRevisionData>> singleEntry = revisionMap.entrySet().iterator().next();
-      IFileSpec resultFileSpec = singleEntry.getKey();
-      if (!FileSpecOpStatus.VALID.equals(resultFileSpec.getOpStatus()) && !FileSpecOpStatus.INFO.equals(resultFileSpec.getOpStatus())) {
-        String statusMessage = resultFileSpec.getStatusMessage();
-        LOG.debug("Unable to get revisions of file " + inputFile + " [" + statusMessage + "]. Skipping it.");
-        return;
+      // Get changelists
+      for (IFileAnnotation fileAnnotation : fileAnnotations) {
+        int lowerChangelistId = fileAnnotation.getLower();
+        if (!changelistMap.containsKey(lowerChangelistId)) {
+          changelistMap.put(lowerChangelistId, server.getChangelist(lowerChangelistId));
+        }
       }
-      revisions = singleEntry.getValue();
     } catch (P4JavaException e) {
       throw new IllegalStateException(e.getLocalizedMessage(), e);
     }
 
-    computeBlame(inputFile, output, fileAnnotations, revisions);
+    computeBlame(inputFile, output, fileAnnotations);
   }
 
-  private void computeBlame(InputFile inputFile, BlameOutput output, List<IFileAnnotation> fileAnnotations, List<IFileRevisionData> revisions) {
-    Map<Integer, Date> changelistDates = new HashMap<>();
-    Map<Integer, String> changelistAuthors = new HashMap<>();
-    for (IFileRevisionData revision : revisions) {
-      changelistDates.put(revision.getChangelistId(), revision.getDate());
-      changelistAuthors.put(revision.getChangelistId(), revision.getUserName());
-    }
-
+  private void computeBlame(InputFile inputFile, BlameOutput output, List<IFileAnnotation> fileAnnotations) {
     List<BlameLine> lines = new ArrayList<>();
     for (IFileAnnotation fileAnnotation : fileAnnotations) {
       int lowerChangelistId = fileAnnotation.getLower();
+      IChangelist changelist = changelistMap.get(lowerChangelistId);
       lines.add(new BlameLine()
         .revision(String.valueOf(lowerChangelistId))
-        .date(changelistDates.get(lowerChangelistId))
-        .author(changelistAuthors.get(lowerChangelistId)));
+        .date(changelist.getDate())
+        .author(changelist.getUsername()));
     }
     if (lines.size() == (inputFile.lines() - 1)) {
       // SONARPLUGINS-3097 Perforce do not report blame on last empty line
       lines.add(lines.get(lines.size() - 1));
     }
     output.blameResult(inputFile, lines);
-  }
-
-  /**
-   * Creating options for revision history command (filelog).
-   * @return options for requests.
-   */
-  private static GetRevisionHistoryOptions getRevisionHistoryOptions() {
-    GetRevisionHistoryOptions options = new GetRevisionHistoryOptions();
-    options.setIncludeInherited(true);
-    return options;
   }
 
   /**
