@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.batch.fs.FileSystem;
@@ -110,6 +111,7 @@ public class PerforceBlameCommand extends BlameCommand {
    * Creating options for file annotation command.
    * @return options for requests.
    */
+  @Nonnull
   private static GetFileAnnotationsOptions getFileAnnotationOptions() {
     GetFileAnnotationsOptions options = new GetFileAnnotationsOptions();
     options.setUseChangeNumbers(true);
@@ -123,7 +125,8 @@ public class PerforceBlameCommand extends BlameCommand {
    * in the current client workspace.
    * @param inputFile file to create file spec for
    */
-  private static IFileSpec createFileSpec(InputFile inputFile) {
+  @Nonnull
+  private static IFileSpec createFileSpec(@Nonnull InputFile inputFile) {
     IFileSpec fileSpec = new FileSpec(PerforceExecutor.encodeWildcards(inputFile.absolutePath()));
     fileSpec.setEndRevision(IFileSpec.HAVE_REVISION);
     return fileSpec;
