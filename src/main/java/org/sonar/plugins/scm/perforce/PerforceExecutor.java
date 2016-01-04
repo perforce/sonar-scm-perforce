@@ -37,6 +37,7 @@ import java.io.File;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Properties;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -58,14 +59,10 @@ public class PerforceExecutor {
   /**
    * Instantiates a new p4 command helper.
    *
-   * @param repository
-   *            the repository
-   * @param fileSet
-   *            the file set
-   * @param logger
-   *            the logger
-   * @throws ScmException
-   *             the scm exception
+   * @param config
+   *            the plugin configuration
+   * @param workDir
+   *            the working directory
    */
   public PerforceExecutor(PerforceConfiguration config, File workDir) {
     this.config = config;
@@ -79,25 +76,6 @@ public class PerforceExecutor {
    */
   public IOptionsServer getServer() {
     return server;
-  }
-
-  /**
-   * Gets the client.
-   *
-   * @return the client
-   */
-  public IClient getClient() {
-    return client;
-  }
-
-  /**
-   * Sets the client.
-   *
-   * @param client
-   *            the new client
-   */
-  public void setClient(IClient client) {
-    this.client = client;
   }
 
   /**
@@ -167,11 +145,7 @@ public class PerforceExecutor {
       return true;
     }
     // If there is a broker or something else that swallows the message
-    if (status.isEmpty()) {
-      return true;
-    }
-
-    return false;
+    return status.isEmpty();
   }
 
   private void createServer() throws URISyntaxException, P4JavaException {
@@ -295,10 +269,10 @@ public class PerforceExecutor {
   /**
    * Creates the client view mapping.
    *
-   * @param repo
-   *            the repo
    * @param basedir
    *            the basedir
+   * @param p4ClientName
+   *            the Perforce client name
    * @return the client view mapping
    */
   private ClientViewMapping createClientViewMapping(File basedir, String p4ClientName) {
@@ -315,7 +289,8 @@ public class PerforceExecutor {
    *            the path
    * @return the repo location
    */
-  private String getRepoLocation(String path) {
+  @Nullable
+  private String getRepoLocation(@Nonnull String path) {
     String location = null;
     if (StringUtils.isNotBlank(path) && client != null) {
       try {
@@ -340,7 +315,8 @@ public class PerforceExecutor {
    *            the repo path
    * @return the canonical repo path
    */
-  private static String getCanonicalRepoPath(String repoPath) {
+  @Nullable
+  private static String getCanonicalRepoPath(@Nullable String repoPath) {
     if (repoPath == null) {
       return null;
     }
@@ -359,6 +335,7 @@ public class PerforceExecutor {
    * @param filePath the file path
    * @return the string
    */
+  @Nonnull
   static String encodeWildcards(@Nullable String filePath) {
     if (filePath != null) {
       return filePath.replaceAll("%", "%25").replaceAll("\\*", "%2A").replaceAll("#", "%23").replaceAll("@", "%40");
