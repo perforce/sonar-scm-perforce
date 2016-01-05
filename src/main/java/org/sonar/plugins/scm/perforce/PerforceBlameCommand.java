@@ -59,51 +59,47 @@ public class PerforceBlameCommand extends BlameCommand {
       for (InputFile inputFile : input.filesToBlame()) {
         blame(inputFile, executor.getServer(), output);
       }
+    } catch (P4JavaException e) {
+      throw new IllegalStateException(e.getLocalizedMessage(), e);
     } finally {
       executor.clean();
     }
   }
 
   @VisibleForTesting
-  void blame(InputFile inputFile, IOptionsServer server, BlameOutput output) {
+  void blame(InputFile inputFile, IOptionsServer server, BlameOutput output) throws P4JavaException {
     IFileSpec fileSpec = createFileSpec(inputFile);
-    List<IFileAnnotation> fileAnnotations;
-    try {
-      // Get file annotations
-      List<IFileSpec> fileSpecs = Collections.singletonList(fileSpec);
-      fileAnnotations = server.getFileAnnotations(fileSpecs, getFileAnnotationOptions());
-      if (fileAnnotations.size() == 1 && fileAnnotations.get(0).getDepotPath() == null) {
-        LOG.debug("File " + inputFile + " is not submitted. Skipping it.");
-        return;
-      }
-      // Get changelists
-      for (IFileAnnotation fileAnnotation : fileAnnotations) {
-        int lowerChangelistId = fileAnnotation.getLower();
-        if (!changelistMap.containsKey(lowerChangelistId)) {
-          changelistMap.put(lowerChangelistId, server.getChangelist(lowerChangelistId));
-        }
-      }
-    } catch (P4JavaException e) {
-      throw new IllegalStateException(e.getLocalizedMessage(), e);
+    List<IFileSpec> fileSpecs = Collections.singletonList(fileSpec);
+
+    // Get file annotations
+    List<IFileAnnotation> fileAnnotations = server.getFileAnnotations(fileSpecs, getFileAnnotationOptions());
+    if (fileAnnotations.size() == 1 && fileAnnotations.get(0).getDepotPath() == null) {
+      LOG.debug("File " + inputFile + " is not submitted. Skipping it.");
+      return;
     }
 
-    computeBlame(inputFile, output, fileAnnotations);
-  }
-
-  private void computeBlame(InputFile inputFile, BlameOutput output, List<IFileAnnotation> fileAnnotations) {
+    // Compute blame, getting changelist from server if not already retrieved
     List<BlameLine> lines = new ArrayList<>();
     for (IFileAnnotation fileAnnotation : fileAnnotations) {
       int lowerChangelistId = fileAnnotation.getLower();
+
       IChangelist changelist = changelistMap.get(lowerChangelistId);
+      if (changelist == null) {
+        changelist = server.getChangelist(lowerChangelistId);
+        changelistMap.put(lowerChangelistId, changelist);
+      }
+
       lines.add(new BlameLine()
         .revision(String.valueOf(lowerChangelistId))
         .date(changelist.getDate())
         .author(changelist.getUsername()));
     }
+
+    // SONARPLUGINS-3097: Perforce does not report blame on last empty line, so populate from last line with blame
     if (lines.size() == (inputFile.lines() - 1)) {
-      // SONARPLUGINS-3097 Perforce do not report blame on last empty line
       lines.add(lines.get(lines.size() - 1));
     }
+
     output.blameResult(inputFile, lines);
   }
 
