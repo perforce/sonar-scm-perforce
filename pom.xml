@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.sonarsource.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>23</version>
+    <version>26</version>
     <relativePath />
   </parent>
   <groupId>org.sonarsource.scm.perforce</groupId>
