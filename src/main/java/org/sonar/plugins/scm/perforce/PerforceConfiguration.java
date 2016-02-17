@@ -43,6 +43,7 @@ public class PerforceConfiguration implements BatchComponent {
   private static final String USER_PROP_KEY = "sonar.perforce.username";
   private static final String PASSWORD_PROP_KEY = "sonar.perforce.password.secured";
   static final String CLIENT_PROP_KEY = "sonar.perforce.clientName";
+  private static final String CLIENT_IMPERSONATED_HOST_PROP_KEY = "sonar.perforce.clientImpersonatedHostname";
   private static final String CHARSET_PROP_KEY = "sonar.perforce.charset";
   private static final String SOCKSOTIMEOUT_PROP_KEY = "sonar.perforce.sockSoTimeout";
 
@@ -90,6 +91,15 @@ public class PerforceConfiguration implements BatchComponent {
         .subCategory(CATEGORY_PERFORCE)
         .index(3)
         .build(),
+      PropertyDefinition.builder(CLIENT_IMPERSONATED_HOST_PROP_KEY)
+        .name("Client impersonated hostname")
+        .description("Name of the host computer to impersonate, per the <a href=\"https://www.perforce.com/perforce/r15.1/manuals/cmdref/P4HOST.html\">Perforce documentation</a>")
+        .type(PropertyType.STRING)
+        .onlyOnQualifiers(Qualifiers.PROJECT)
+        .category(CoreProperties.CATEGORY_SCM)
+        .subCategory(CATEGORY_PERFORCE)
+        .index(4)
+        .build(),
       PropertyDefinition.builder(USESSL_PROP_KEY)
         .name("Use SSL")
         .description("Use SSL protocol (p4javassl://) to connect to server")
@@ -98,24 +108,26 @@ public class PerforceConfiguration implements BatchComponent {
         .onQualifiers(Qualifiers.PROJECT)
         .category(CoreProperties.CATEGORY_SCM)
         .subCategory(CATEGORY_PERFORCE)
-        .index(4)
+        .index(5)
         .build(),
       PropertyDefinition.builder(CHARSET_PROP_KEY)
         .name("Perforce charset")
         .description("Character set used for translation of unicode files (P4CHARSET)")
         .type(PropertyType.STRING)
+        .onQualifiers(Qualifiers.PROJECT)
         .category(CoreProperties.CATEGORY_SCM)
         .subCategory(CATEGORY_PERFORCE)
-        .index(5)
+        .index(6)
         .build(),
       PropertyDefinition.builder(SOCKSOTIMEOUT_PROP_KEY)
         .name("Perforce socket read timeout")
         .description("Sets the socket read timeout for communicating with the Perforce service (milliseconds)")
         .type(PropertyType.INTEGER)
         .defaultValue(String.valueOf(RpcPropertyDefs.RPC_SOCKET_SO_TIMEOUT_DEFAULT))
+        .onQualifiers(Qualifiers.PROJECT)
         .category(CoreProperties.CATEGORY_SCM)
         .subCategory(CATEGORY_PERFORCE)
-        .index(6)
+        .index(7)
         .build());
   }
 
@@ -146,6 +158,11 @@ public class PerforceConfiguration implements BatchComponent {
   @CheckForNull
   public String clientName() {
     return settings.getString(CLIENT_PROP_KEY);
+  }
+
+  @CheckForNull
+  public String clientImpersonatedHostname() {
+    return settings.getString(CLIENT_IMPERSONATED_HOST_PROP_KEY);
   }
 
   public int sockSoTimeout() {
