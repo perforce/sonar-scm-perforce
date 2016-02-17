@@ -29,6 +29,7 @@ import com.perforce.p4java.impl.generic.client.ClientView;
 import com.perforce.p4java.impl.generic.client.ClientView.ClientViewMapping;
 import com.perforce.p4java.impl.mapbased.rpc.RpcPropertyDefs;
 import com.perforce.p4java.impl.mapbased.rpc.sys.helper.RpcSystemFileCommandsHelper;
+import com.perforce.p4java.option.UsageOptions;
 import com.perforce.p4java.option.server.TrustOptions;
 import com.perforce.p4java.server.IOptionsServer;
 import com.perforce.p4java.server.ServerFactory;
@@ -155,13 +156,19 @@ public class PerforceExecutor {
     if (StringUtils.isEmpty(config.port())) {
       throw MessageException.of("Please configure perforce port using " + PerforceConfiguration.PORT_PROP_KEY);
     }
+
     Properties props = new Properties();
     props.put(RpcPropertyDefs.RPC_SOCKET_SO_TIMEOUT_NICK, config.sockSoTimeout());
+
+    UsageOptions usageOptions = new UsageOptions(null);
+    // Param is nullable
+    usageOptions.setHostName(config.clientImpersonatedHostname());
+
     if (config.useSsl()) {
-      server = ServerFactory.getOptionsServer("p4javassl://" + config.port(), props, null);
+      server = ServerFactory.getOptionsServer("p4javassl://" + config.port(), props, usageOptions);
       server.addTrust(new TrustOptions().setAutoAccept(true));
     } else {
-      server = ServerFactory.getOptionsServer("p4java://" + config.port(), props, null);
+      server = ServerFactory.getOptionsServer("p4java://" + config.port(), props, usageOptions);
     }
     // Register server callback.
     server.registerCallback(new CommandLogger());
