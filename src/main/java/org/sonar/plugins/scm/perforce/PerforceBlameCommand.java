@@ -25,13 +25,21 @@ import com.perforce.p4java.core.file.FileSpecOpStatus;
 import com.perforce.p4java.core.file.IFileAnnotation;
 import com.perforce.p4java.core.file.IFileRevisionData;
 import com.perforce.p4java.core.file.IFileSpec;
+import com.perforce.p4java.exception.AccessException;
+import com.perforce.p4java.exception.ConnectionException;
 import com.perforce.p4java.exception.P4JavaException;
+import com.perforce.p4java.exception.RequestException;
 import com.perforce.p4java.impl.generic.core.file.FileSpec;
 import com.perforce.p4java.option.server.GetFileAnnotationsOptions;
 import com.perforce.p4java.option.server.GetRevisionHistoryOptions;
 import com.perforce.p4java.server.IOptionsServer;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,8 +52,8 @@ public class PerforceBlameCommand extends BlameCommand {
 
   private static final Logger LOG = LoggerFactory.getLogger(PerforceBlameCommand.class);
   private final PerforceConfiguration config;
-  private final Map<Integer, IFileRevisionData> revisionDataMap = new HashMap<>();
-  private final Map<Integer, IChangelist> changelistMap = new HashMap<>();
+  private final Map<Integer, IFileRevisionData> revisionDataByChangelistId = new HashMap<>();
+  private final Map<Integer, IChangelist> changelistCache = new HashMap<>();
 
   public PerforceBlameCommand(PerforceConfiguration config) {
     this.config = config;
@@ -89,52 +97,11 @@ public class PerforceBlameCommand extends BlameCommand {
         return;
       }
       for (IFileRevisionData revisionData : entry.getValue()) {
-        revisionDataMap.put(revisionData.getChangelistId(), revisionData);
+        revisionDataByChangelistId.put(revisionData.getChangelistId(), revisionData);
       }
     }
 
-    // Compute blame, getting changelist from server if not already retrieved
-    List<BlameLine> lines = new ArrayList<>();
-    for (IFileAnnotation fileAnnotation : fileAnnotations) {
-      int lowerChangelistId = fileAnnotation.getLower();
-
-      IFileRevisionData data = revisionDataMap.get(lowerChangelistId);
-      if (data != null) {
-
-        lines.add(new BlameLine()
-            .revision(String.valueOf(lowerChangelistId))
-            .date(data.getDate())
-            .author(data.getUserName()));
-
-      } else {
-        // Sometimes they're missing from the revision history, so try to get it directly.
-
-        LOG.debug("Changelist " + lowerChangelistId + " was not found in history for " + inputFile + ". It will be fetched directly.");
-        IChangelist changelist = changelistMap.get(lowerChangelistId);
-        if (changelist == null) {
-          changelist = server.getChangelist(lowerChangelistId);
-          if (changelist != null) { // sometimes even that can fail due to cross-server imports
-            changelistMap.put(lowerChangelistId, changelist);
-          }
-        }
-
-        if (changelist != null) {
-          lines.add(new BlameLine()
-              .revision(String.valueOf(lowerChangelistId))
-              .date(changelist.getDate())
-              .author(changelist.getUsername()));
-        } else {
-          // We really couldn't get any information for this changelist!
-          // Unfortunately, blame information is required for every line...
-          lines.add(new BlameLine()
-              .revision(String.valueOf(lowerChangelistId))
-              .date(new Date(0))
-              .author("unknown"));
-        }
-
-      }
-
-    }
+    List<BlameLine> lines = computeBlame(inputFile, server, fileAnnotations);
 
     // SONARPLUGINS-3097: Perforce does not report blame on last empty line, so populate from last line with blame
     if (lines.size() == (inputFile.lines() - 1)) {
@@ -142,6 +109,68 @@ public class PerforceBlameCommand extends BlameCommand {
     }
 
     output.blameResult(inputFile, lines);
+  }
+
+  /**
+   * Compute blame, getting changelist from server if not already retrieved
+   */
+  private List<BlameLine> computeBlame(InputFile inputFile, IOptionsServer server, List<IFileAnnotation> fileAnnotations)
+    throws ConnectionException, RequestException, AccessException {
+    List<BlameLine> lines = new ArrayList<>();
+    for (IFileAnnotation fileAnnotation : fileAnnotations) {
+      int lowerChangelistId = fileAnnotation.getLower();
+
+      BlameLine blameLine = blameLineFromHistory(lowerChangelistId);
+      if (blameLine == null) {
+        LOG.debug("Changelist " + lowerChangelistId + " was not found in history for " + inputFile + ". It will be fetched directly.");
+        blameLine = blameLineFromChangeListDetails(server, lowerChangelistId);
+      }
+
+      if (blameLine == null) {
+        // We really couldn't get any information for this changelist!
+        // Unfortunately, blame information is required for every line...
+        blameLine = new BlameLine()
+          .revision(String.valueOf(lowerChangelistId))
+          .date(new Date(0))
+          .author("unknown");
+      }
+
+      lines.add(blameLine);
+    }
+    return lines;
+  }
+
+  @CheckForNull
+  private BlameLine blameLineFromChangeListDetails(IOptionsServer server, int changelistId)
+    throws ConnectionException, RequestException, AccessException {
+    IChangelist changelist = changelistCache.get(changelistId);
+    if (changelist == null) {
+      changelist = server.getChangelist(changelistId);
+      // sometimes even that can fail due to cross-server imports
+      if (changelist != null) {
+        changelistCache.put(changelistId, changelist);
+      }
+    }
+
+    if (changelist != null) {
+      return new BlameLine()
+        .revision(String.valueOf(changelistId))
+        .date(changelist.getDate())
+        .author(changelist.getUsername());
+    }
+    return null;
+  }
+
+  @CheckForNull
+  private BlameLine blameLineFromHistory(int changelistId) {
+    IFileRevisionData data = revisionDataByChangelistId.get(changelistId);
+    if (data != null) {
+      return new BlameLine()
+        .revision(String.valueOf(changelistId))
+        .date(data.getDate())
+        .author(data.getUserName());
+    }
+    return null;
   }
 
   /**

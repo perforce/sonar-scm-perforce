@@ -27,16 +27,24 @@ import com.perforce.p4java.core.file.IFileSpec;
 import com.perforce.p4java.option.server.GetFileAnnotationsOptions;
 import com.perforce.p4java.option.server.GetRevisionHistoryOptions;
 import com.perforce.p4java.server.IOptionsServer;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.Test;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.scm.BlameCommand.BlameOutput;
 import org.sonar.api.batch.scm.BlameLine;
 
-import java.util.*;
-
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 public class PerforceBlameCommandTest {
 
@@ -62,21 +70,32 @@ public class PerforceBlameCommandTest {
     IOptionsServer server = mock(IOptionsServer.class);
     PerforceBlameCommand command = new PerforceBlameCommand(mock(PerforceConfiguration.class));
 
-    IFileAnnotation annotation1 = mock(IFileAnnotation.class);
-    when(annotation1.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
-    when(annotation1.getLower()).thenReturn(3);
+    // Changelist 3 is present in history
 
-    IFileAnnotation annotation2 = mock(IFileAnnotation.class);
-    when(annotation2.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
-    when(annotation2.getLower()).thenReturn(3);
+    IFileAnnotation line1ChangeList3 = mock(IFileAnnotation.class);
+    when(line1ChangeList3.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
+    when(line1ChangeList3.getLower()).thenReturn(3);
 
-    IFileAnnotation annotation3 = mock(IFileAnnotation.class);
-    when(annotation3.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
-    when(annotation3.getLower()).thenReturn(4);
+    IFileAnnotation line2ChangeList3 = mock(IFileAnnotation.class);
+    when(line2ChangeList3.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
+    when(line2ChangeList3.getLower()).thenReturn(3);
 
-    IFileAnnotation annotation4 = mock(IFileAnnotation.class);
-    when(annotation4.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
-    when(annotation4.getLower()).thenReturn(5);
+    // Changelist 4 is not present in history but can be fetched from server
+
+    IFileAnnotation line3ChangeList4 = mock(IFileAnnotation.class);
+    when(line3ChangeList4.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
+    when(line3ChangeList4.getLower()).thenReturn(4);
+
+    // Changelist 5 is not present in history nor in server
+
+    IFileAnnotation line4ChangeList5 = mock(IFileAnnotation.class);
+    when(line4ChangeList5.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
+    when(line4ChangeList5.getLower()).thenReturn(5);
+
+    // Put Changlist 4 again to verify we fetch only once from server
+    IFileAnnotation line5ChangeList4 = mock(IFileAnnotation.class);
+    when(line5ChangeList4.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
+    when(line5ChangeList4.getLower()).thenReturn(4);
 
     Map<IFileSpec, List<IFileRevisionData>> result = new HashMap<>();
     IFileSpec fileSpecResult = mock(IFileSpec.class);
@@ -89,7 +108,8 @@ public class PerforceBlameCommandTest {
     result.put(fileSpecResult, Collections.singletonList(revision3));
 
     when(server.getRevisionHistory(anyListOf(IFileSpec.class), any(GetRevisionHistoryOptions.class))).thenReturn(result);
-    when(server.getFileAnnotations(anyListOf(IFileSpec.class), any(GetFileAnnotationsOptions.class))).thenReturn(Arrays.asList(annotation1, annotation2, annotation3, annotation4));
+    when(server.getFileAnnotations(anyListOf(IFileSpec.class), any(GetFileAnnotationsOptions.class)))
+      .thenReturn(Arrays.asList(line1ChangeList3, line2ChangeList3, line3ChangeList4, line4ChangeList5, line5ChangeList4));
 
     IChangelist changelist = mock(IChangelist.class);
     when(changelist.getDate()).thenReturn(date);
@@ -105,7 +125,10 @@ public class PerforceBlameCommandTest {
     BlameLine line2 = new BlameLine().revision("3").date(date).author("jhenry");
     BlameLine line3 = new BlameLine().revision("4").date(date).author("bgates");
     BlameLine line4 = new BlameLine().revision("5").date(new Date(0)).author("unknown");
-    verify(blameOutput).blameResult(inputFile, Arrays.asList(line1, line2, line3, line4));
+    BlameLine line5 = new BlameLine().revision("4").date(date).author("bgates");
+    verify(blameOutput).blameResult(inputFile, Arrays.asList(line1, line2, line3, line4, line5));
+
+    // Changelist 4 should have been fetched only once
     verify(server, times(1)).getChangelist(4);
   }
 
