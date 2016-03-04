@@ -181,7 +181,7 @@ public class PerforceBlameCommand extends BlameCommand {
   private static GetFileAnnotationsOptions getFileAnnotationOptions() {
     GetFileAnnotationsOptions options = new GetFileAnnotationsOptions();
     options.setUseChangeNumbers(true);
-    options.setFollowBranches(true);
+    options.setFollowAllIntegrations(true);
     options.setIgnoreWhitespaceChanges(true);
     return options;
   }
