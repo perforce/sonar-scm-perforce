@@ -101,7 +101,8 @@ public class PerforceBlameCommand extends BlameCommand {
       }
     }
 
-    List<BlameLine> lines = computeBlame(inputFile, server, fileAnnotations);
+    boolean handleCrlf = fileAnnotations.size() >= (inputFile.lines() - 1) * 2;
+    List<BlameLine> lines = computeBlame(inputFile, server, fileAnnotations, handleCrlf);
 
     // SONARPLUGINS-3097: Perforce does not report blame on last empty line, so populate from last line with blame
     if (lines.size() == (inputFile.lines() - 1)) {
@@ -114,10 +115,11 @@ public class PerforceBlameCommand extends BlameCommand {
   /**
    * Compute blame, getting changelist from server if not already retrieved
    */
-  private List<BlameLine> computeBlame(InputFile inputFile, IOptionsServer server, List<IFileAnnotation> fileAnnotations)
+  private List<BlameLine> computeBlame(InputFile inputFile, IOptionsServer server, List<IFileAnnotation> fileAnnotations, boolean handleCrlf)
     throws ConnectionException, RequestException, AccessException {
     List<BlameLine> lines = new ArrayList<>();
-    for (IFileAnnotation fileAnnotation : fileAnnotations) {
+    for (int i = 0; i < fileAnnotations.size(); i++) {
+      IFileAnnotation fileAnnotation = fileAnnotations.get(i);
       int lowerChangelistId = fileAnnotation.getLower();
 
       BlameLine blameLine = blameLineFromHistory(lowerChangelistId);
@@ -136,6 +138,16 @@ public class PerforceBlameCommand extends BlameCommand {
       }
 
       lines.add(blameLine);
+
+      if (handleCrlf
+              && fileAnnotation.getLine() != null
+              && fileAnnotation.getLine().endsWith("\r")
+              && i + 1 < fileAnnotations.size()
+              && fileAnnotations.get(i + 1).getLine() != null
+              && fileAnnotations.get(i + 1).getLine().isEmpty()) {
+        // Skip next annotation since it is a line ending corresponding to the current annotation
+        i++;
+      }
     }
     return lines;
   }
