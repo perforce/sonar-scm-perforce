@@ -36,9 +36,14 @@ import com.perforce.p4java.server.IOptionsServer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
@@ -52,8 +57,8 @@ public class PerforceBlameCommand extends BlameCommand {
 
   private static final Logger LOG = LoggerFactory.getLogger(PerforceBlameCommand.class);
   private final PerforceConfiguration config;
-  private final Map<Integer, IFileRevisionData> revisionDataByChangelistId = new HashMap<>();
-  private final Map<Integer, IChangelist> changelistCache = new HashMap<>();
+  private final Map<Integer, IFileRevisionData> revisionDataByChangelistId = new ConcurrentHashMap<>();
+  private final Map<Integer, IChangelist> changelistCache = new ConcurrentHashMap<>();
 
   public PerforceBlameCommand(PerforceConfiguration config) {
     this.config = config;
@@ -65,14 +70,44 @@ public class PerforceBlameCommand extends BlameCommand {
     LOG.debug("Working directory: " + fs.baseDir().getAbsolutePath());
     PerforceExecutor executor = new PerforceExecutor(config, fs.baseDir());
     try {
-      for (InputFile inputFile : input.filesToBlame()) {
-        blame(inputFile, executor.getServer(), output);
-      }
-    } catch (P4JavaException e) {
-      throw new IllegalStateException(e.getLocalizedMessage(), e);
+      ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 1);
+      List<Future<Void>> tasks = submitTasks(executorService, executor.getServer(), input, output);
+      waitForTaskToComplete(executorService, tasks);
     } finally {
       executor.clean();
     }
+  }
+
+  private static void waitForTaskToComplete(ExecutorService executorService, List<Future<Void>> tasks) {
+    executorService.shutdown();
+    for (Future<Void> task : tasks) {
+      try {
+        task.get();
+      } catch (ExecutionException e) {
+        // Unwrap ExecutionException
+        throw e.getCause() instanceof RuntimeException ? (RuntimeException) e.getCause() : new IllegalStateException(e.getCause());
+      } catch (InterruptedException e) {
+        throw new IllegalStateException(e);
+      }
+    }
+  }
+
+  private List<Future<Void>> submitTasks(ExecutorService executorService, IOptionsServer server, BlameInput input, BlameOutput output) {
+    List<Future<Void>> tasks = new ArrayList<>();
+    for (InputFile inputFile : input.filesToBlame()) {
+      tasks.add(submitTask(executorService, server, inputFile, output));
+    }
+    return tasks;
+  }
+
+  private Future<Void> submitTask(ExecutorService executorService, final IOptionsServer server, final InputFile inputFile, final BlameOutput output) {
+    return executorService.submit(new Callable<Void>() {
+      @Override
+      public Void call() throws P4JavaException {
+        blame(inputFile, server, output);
+        return null;
+      }
+    });
   }
 
   @VisibleForTesting
