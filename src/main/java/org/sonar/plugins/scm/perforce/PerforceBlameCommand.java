@@ -56,6 +56,8 @@ import org.sonar.api.batch.scm.BlameLine;
 public class PerforceBlameCommand extends BlameCommand {
 
   private static final Logger LOG = LoggerFactory.getLogger(PerforceBlameCommand.class);
+  private static final int MAX_ATTEMPTS = 3;
+
   private final PerforceConfiguration config;
   private final Map<Integer, IFileRevisionData> revisionDataByChangelistId = new ConcurrentHashMap<>();
   private final Map<Integer, IChangelist> changelistCache = new ConcurrentHashMap<>();
@@ -104,7 +106,17 @@ public class PerforceBlameCommand extends BlameCommand {
     return executorService.submit(new Callable<Void>() {
       @Override
       public Void call() throws P4JavaException {
-        blame(inputFile, server, output);
+        int attempts = 0;
+        while (attempts < MAX_ATTEMPTS) {
+          try {
+            blame(inputFile, server, output);
+            break;
+          } catch (P4JavaException e) {
+            if (++attempts >= MAX_ATTEMPTS) {
+              throw e;
+            }
+          }
+        }
         return null;
       }
     });
