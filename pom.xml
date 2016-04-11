@@ -58,6 +58,7 @@
     <sonar.buildVersion>5.0</sonar.buildVersion>
     <sonar.pluginName>Perforce</sonar.pluginName>
     <sonar.pluginClass>org.sonar.plugins.scm.perforce.PerforcePlugin</sonar.pluginClass>
+    <gitRepositoryName>sonar-scm-perforce</gitRepositoryName>
   </properties>
 
   <dependencies>
