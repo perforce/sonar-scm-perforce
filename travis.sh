@@ -7,42 +7,32 @@ function strongEcho {
   echo "================ $1 ================="
 }
 
+function installTravisTools {
+  mkdir ~/.local
+  curl -sSL https://github.com/SonarSource/travis-utils/tarball/v27 | tar zx --strip-components 1 -C ~/.local
+  source ~/.local/bin/install
+}
+
+installTravisTools
+
 case "$TARGET" in
 
 CI)
-  if [ "${TRAVIS_BRANCH}" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-    strongEcho 'Build and analyze commit in master'
-    git fetch --unshallow || true
-    # this commit is master must be built and analyzed (with upload of report)
-    export MAVEN_OPTS="-Xmx1G -Xms128m"
-    mvn org.jacoco:jacoco-maven-plugin:prepare-agent verify sonar:sonar \
-      -Pcoverage-per-test \
-      -Dmaven.test.redirectTestOutputToFile=false \
-      -Dsonar.host.url=$SONAR_HOST_URL \
-      -Dsonar.login=$SONAR_TOKEN \
-      -B -e -V
+  #regular_mvn_build_deploy_analyze
 
-  elif [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
-    strongEcho 'Build and analyze pull request'
-    # this pull request must be built and analyzed (without upload of report)
-    mvn org.jacoco:jacoco-maven-plugin:prepare-agent verify sonar:sonar \
-      -Pcoverage-per-test -Dmaven.test.redirectTestOutputToFile=false \
-      -Dsonar.analysis.mode=issues \
-      -Dsonar.github.pullRequest=$TRAVIS_PULL_REQUEST \
-      -Dsonar.github.repository=$TRAVIS_REPO_SLUG \
-      -Dsonar.github.oauth=$GITHUB_TOKEN \
-      -Dsonar.host.url=$SONAR_HOST_URL \
-      -Dsonar.login=$SONAR_TOKEN \
-      -B -e -V
-
-  else
-    strongEcho 'Build, no analysis'
-    # Build branch, without any analysis
-
-    # No need for Maven goal "install" as the generated JAR file does not need to be installed
-    # in Maven local repository
-    mvn verify -Dmaven.test.redirectTestOutputToFile=false -B -e -V
-  fi
+  SONAR_PROJECT_VERSION=`maven_expression "project.version"`
+ 
+  # Do not deploy a SNAPSHOT version but the release version related to this build
+  set_maven_build_version $TRAVIS_BUILD_NUMBER
+ 
+  # the profile "deploy-sonarsource" is defined in parent pom v28+
+  mvn org.jacoco:jacoco-maven-plugin:prepare-agent deploy sonar:sonar \
+    -Pcoverage-per-test,deploy-sonarsource \
+    -Dmaven.test.redirectTestOutputToFile=false \
+    -Dsonar.host.url=$SONAR_HOST_URL \
+    -Dsonar.login=$SONAR_TOKEN \
+    -Dsonar.projectVersion=$SONAR_PROJECT_VERSION \
+    -B -e -V
   ;;
 
 
