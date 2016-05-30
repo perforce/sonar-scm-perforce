@@ -38,20 +38,20 @@
   </developers>
 
   <scm>
-    <connection>scm:git:git@github.com:SonarSource/sonar-scm-perforce.git</connection>
-    <developerConnection>scm:git:git@github.com:SonarSource/sonar-scm-perforce.git</developerConnection>
-    <url>https://github.com/SonarSource/sonar-scm-perforce</url>
+    <connection>scm:git:git@github.com:SonarQubeCommunity/sonar-scm-perforce.git</connection>
+    <developerConnection>scm:git:git@github.com:SonarQubeCommunity/sonar-scm-perforce.git</developerConnection>
+    <url>https://github.com/SonarQubeCommunity/sonar-scm-perforce</url>
     <tag>HEAD</tag>
   </scm>
   
   <issueManagement>
-    <system>jira</system>
-    <url>https://jira.sonarsource.com/browse/SONARSCPER</url>
+    <system>GitHub Issues</system>
+    <url>https://github.com/SonarQubeCommunity/sonar-scm-perforce/issues</url>
   </issueManagement>
   
   <ciManagement>
     <system>Travis</system>
-    <url>https://travis-ci.org/SonarSource/sonar-scm-perforce</url>
+    <url>https://travis-ci.org/SonarQubeCommunity/sonar-scm-perforce</url>
   </ciManagement>
 
   <properties>
