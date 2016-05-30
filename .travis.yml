@@ -6,7 +6,7 @@ jdk:
   - oraclejdk7
 
 script:
-  - ./travis.sh
+  - mvn verify -B -e -V
 
 env:
   matrix:
@@ -20,6 +20,3 @@ cache:
 
 notifications:
   email: false
-  webhooks:
-    - secure: "PAIYhSsUOPtNPOssQ3/SXVF/rtN/u+G/wI1xSuERXKRxmwVT9T3TAyMy1YZARssTVHX8AmsjNo2YzoBFutyNTg6ENl9JMyGO146Stod7/RUAGdGHRvTaTgRX+roPhCZ77f+w1LzamVxmubTf+vt+0ukct82fvYem4hd44hNPlvY="
-
