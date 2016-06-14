@@ -8,15 +8,9 @@ jdk:
 script:
   - mvn verify -B -e -V
 
-env:
-  matrix:
-    - TARGET=CI
-
 cache:
   directories:
     - $HOME/.m2/repository
-    # for integration tests and analysis
-    - $HOME/.sonar
 
 notifications:
   email: false
