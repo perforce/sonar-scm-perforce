@@ -24,10 +24,11 @@ sonar.perforce.useSsl | Use SSL protocol (p4javassl://) to connect to server | f
 sonar.perforce.charset | Character set used for translation of unicode files (P4CHARSET)	 
 sonar.perforce.sockSoTimeout | Perforce socket read timeout for communicating with the Perforce service (milliseconds) | 30000 (30s)
 sonar.perforce.clientImpersonatedHostname | Name of the host computer to impersonate (P4HOST) |
+sonar.perforce.writeTickets | Do not write p4 tickets file when authenticating | false
 
 ## Known Limitations
 * No auto-detection since nothing in workspace seems to show this is under Perforce control management (like .git folder for Git workspace).
 * Blame is not executed in parallel since we are not confident in the thread safety of p4java library.
 
-## Developper informations
-The plugin use the p4java pure Java implementation of Perforce client: http://www.perforce.com/perforce/doc.current/manuals/p4java/01_p4java.html
+## Developer information
+The plugin uses the p4java pure Java implementation of Perforce client: http://www.perforce.com/perforce/doc.current/manuals/p4java/01_p4java.html
