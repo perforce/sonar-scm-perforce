@@ -36,9 +36,14 @@ import com.perforce.p4java.server.IOptionsServer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
@@ -51,9 +56,11 @@ import org.sonar.api.batch.scm.BlameLine;
 public class PerforceBlameCommand extends BlameCommand {
 
   private static final Logger LOG = LoggerFactory.getLogger(PerforceBlameCommand.class);
+  private static final int MAX_ATTEMPTS = 3;
+
   private final PerforceConfiguration config;
-  private final Map<Integer, IFileRevisionData> revisionDataByChangelistId = new HashMap<>();
-  private final Map<Integer, IChangelist> changelistCache = new HashMap<>();
+  private final Map<Integer, IFileRevisionData> revisionDataByChangelistId = new ConcurrentHashMap<>();
+  private final Map<Integer, IChangelist> changelistCache = new ConcurrentHashMap<>();
 
   public PerforceBlameCommand(PerforceConfiguration config) {
     this.config = config;
@@ -65,14 +72,54 @@ public class PerforceBlameCommand extends BlameCommand {
     LOG.debug("Working directory: " + fs.baseDir().getAbsolutePath());
     PerforceExecutor executor = new PerforceExecutor(config, fs.baseDir());
     try {
-      for (InputFile inputFile : input.filesToBlame()) {
-        blame(inputFile, executor.getServer(), output);
-      }
-    } catch (P4JavaException e) {
-      throw new IllegalStateException(e.getLocalizedMessage(), e);
+      ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 1);
+      List<Future<Void>> tasks = submitTasks(executorService, executor.getServer(), input, output);
+      waitForTaskToComplete(executorService, tasks);
     } finally {
       executor.clean();
     }
+  }
+
+  private static void waitForTaskToComplete(ExecutorService executorService, List<Future<Void>> tasks) {
+    executorService.shutdown();
+    for (Future<Void> task : tasks) {
+      try {
+        task.get();
+      } catch (ExecutionException e) {
+        // Unwrap ExecutionException
+        throw e.getCause() instanceof RuntimeException ? (RuntimeException) e.getCause() : new IllegalStateException(e.getCause());
+      } catch (InterruptedException e) {
+        throw new IllegalStateException(e);
+      }
+    }
+  }
+
+  private List<Future<Void>> submitTasks(ExecutorService executorService, IOptionsServer server, BlameInput input, BlameOutput output) {
+    List<Future<Void>> tasks = new ArrayList<>();
+    for (InputFile inputFile : input.filesToBlame()) {
+      tasks.add(submitTask(executorService, server, inputFile, output));
+    }
+    return tasks;
+  }
+
+  private Future<Void> submitTask(ExecutorService executorService, final IOptionsServer server, final InputFile inputFile, final BlameOutput output) {
+    return executorService.submit(new Callable<Void>() {
+      @Override
+      public Void call() throws P4JavaException {
+        int attempts = 0;
+        while (attempts < MAX_ATTEMPTS) {
+          try {
+            blame(inputFile, server, output);
+            break;
+          } catch (P4JavaException e) {
+            if (++attempts >= MAX_ATTEMPTS) {
+              throw e;
+            }
+          }
+        }
+        return null;
+      }
+    });
   }
 
   @VisibleForTesting
@@ -101,7 +148,8 @@ public class PerforceBlameCommand extends BlameCommand {
       }
     }
 
-    List<BlameLine> lines = computeBlame(inputFile, server, fileAnnotations);
+    boolean handleCrlf = fileAnnotations.size() >= (inputFile.lines() - 1) * 2;
+    List<BlameLine> lines = computeBlame(inputFile, server, fileAnnotations, handleCrlf);
 
     // SONARPLUGINS-3097: Perforce does not report blame on last empty line, so populate from last line with blame
     if (lines.size() == (inputFile.lines() - 1)) {
@@ -114,10 +162,11 @@ public class PerforceBlameCommand extends BlameCommand {
   /**
    * Compute blame, getting changelist from server if not already retrieved
    */
-  private List<BlameLine> computeBlame(InputFile inputFile, IOptionsServer server, List<IFileAnnotation> fileAnnotations)
+  private List<BlameLine> computeBlame(InputFile inputFile, IOptionsServer server, List<IFileAnnotation> fileAnnotations, boolean handleCrlf)
     throws ConnectionException, RequestException, AccessException {
     List<BlameLine> lines = new ArrayList<>();
-    for (IFileAnnotation fileAnnotation : fileAnnotations) {
+    for (int i = 0; i < fileAnnotations.size(); i++) {
+      IFileAnnotation fileAnnotation = fileAnnotations.get(i);
       int lowerChangelistId = fileAnnotation.getLower();
 
       BlameLine blameLine = blameLineFromHistory(lowerChangelistId);
@@ -136,6 +185,16 @@ public class PerforceBlameCommand extends BlameCommand {
       }
 
       lines.add(blameLine);
+
+      if (handleCrlf
+              && fileAnnotation.getLine() != null
+              && fileAnnotation.getLine().endsWith("\r")
+              && i + 1 < fileAnnotations.size()
+              && fileAnnotations.get(i + 1).getLine() != null
+              && fileAnnotations.get(i + 1).getLine().isEmpty()) {
+        // Skip next annotation since it is a line ending corresponding to the current annotation
+        i++;
+      }
     }
     return lines;
   }
@@ -181,7 +240,7 @@ public class PerforceBlameCommand extends BlameCommand {
   private static GetFileAnnotationsOptions getFileAnnotationOptions() {
     GetFileAnnotationsOptions options = new GetFileAnnotationsOptions();
     options.setUseChangeNumbers(true);
-    options.setFollowBranches(true);
+    options.setFollowAllIntegrations(true);
     options.setIgnoreWhitespaceChanges(true);
     return options;
   }
