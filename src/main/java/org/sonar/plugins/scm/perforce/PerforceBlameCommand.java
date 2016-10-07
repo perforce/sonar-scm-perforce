@@ -56,7 +56,8 @@ import org.sonar.api.batch.scm.BlameLine;
 public class PerforceBlameCommand extends BlameCommand {
 
   private static final Logger LOG = LoggerFactory.getLogger(PerforceBlameCommand.class);
-  private static final int MAX_ATTEMPTS = 3;
+  @VisibleForTesting
+  static final int MAX_ATTEMPTS = 3;
 
   private final PerforceConfiguration config;
   private final Map<Integer, IFileRevisionData> revisionDataByChangelistId = new ConcurrentHashMap<>();
@@ -106,29 +107,41 @@ public class PerforceBlameCommand extends BlameCommand {
     return executorService.submit(new Callable<Void>() {
       @Override
       public Void call() throws P4JavaException {
-        int attempts = 0;
-        while (attempts < MAX_ATTEMPTS) {
-          try {
-            blame(inputFile, server, output);
-            break;
-          } catch (P4JavaException e) {
-            if (++attempts >= MAX_ATTEMPTS) {
-              throw e;
-            }
-          }
-        }
-        return null;
+        return tryBlame(inputFile, server, output);
       }
     });
   }
 
   @VisibleForTesting
+  Void tryBlame(InputFile inputFile, IOptionsServer server, BlameOutput output) throws P4JavaException {
+    int attempts = 0;
+    GetFileAnnotationsOptions annotationOptions = getFileAnnotationOptions();
+    while (attempts < MAX_ATTEMPTS) {
+      try {
+        blame(inputFile, server, output, annotationOptions);
+        break;
+      } catch (P4JavaException e) {
+        annotationOptions.setFollowAllIntegrations(false);
+        annotationOptions.setIgnoreWhitespaceChanges(false);
+        if (++attempts >= MAX_ATTEMPTS) {
+          throw e;
+        }
+      }
+    }
+    return null;
+  }
+
+  @VisibleForTesting
   void blame(InputFile inputFile, IOptionsServer server, BlameOutput output) throws P4JavaException {
+    blame(inputFile, server, output, getFileAnnotationOptions());
+  }
+
+  private void blame(InputFile inputFile, IOptionsServer server, BlameOutput output, GetFileAnnotationsOptions fileAnnotationOptions) throws P4JavaException {
     IFileSpec fileSpec = createFileSpec(inputFile);
     List<IFileSpec> fileSpecs = Collections.singletonList(fileSpec);
 
     // Get file annotations
-    List<IFileAnnotation> fileAnnotations = server.getFileAnnotations(fileSpecs, getFileAnnotationOptions());
+    List<IFileAnnotation> fileAnnotations = server.getFileAnnotations(fileSpecs, fileAnnotationOptions);
     if (fileAnnotations.size() == 1 && fileAnnotations.get(0).getDepotPath() == null) {
       LOG.debug("File " + inputFile + " is not submitted. Skipping it.");
       return;
