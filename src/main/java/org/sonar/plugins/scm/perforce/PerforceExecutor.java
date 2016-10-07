@@ -127,7 +127,7 @@ public class PerforceExecutor {
         if (!isLogin(server)) {
           // Login to the server with a password.
           // Password can be null if it is not needed (i.e. SSO logins).
-          LoginOptions options = new LoginOptions(false, config.writeTickets());
+          LoginOptions options = new LoginOptions(false, true);
           server.login(config.password(), options);
         }
       }

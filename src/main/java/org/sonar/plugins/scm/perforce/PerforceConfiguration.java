@@ -37,7 +37,6 @@ import java.util.List;
 public class PerforceConfiguration implements BatchComponent {
 
   private static final String FALSE = "false";
-  private static final String TRUE = "true";
   private static final String CATEGORY_PERFORCE = "Perforce";
   static final String PORT_PROP_KEY = "sonar.perforce.port";
   private static final String USESSL_PROP_KEY = "sonar.perforce.useSsl";
@@ -47,7 +46,6 @@ public class PerforceConfiguration implements BatchComponent {
   private static final String CLIENT_IMPERSONATED_HOST_PROP_KEY = "sonar.perforce.clientImpersonatedHostname";
   private static final String CHARSET_PROP_KEY = "sonar.perforce.charset";
   private static final String SOCKSOTIMEOUT_PROP_KEY = "sonar.perforce.sockSoTimeout";
-  private static final String WRITE_TICKETS = "sonar.perforce.writeTickets";
 
   private final Settings settings;
 
@@ -130,16 +128,6 @@ public class PerforceConfiguration implements BatchComponent {
         .category(CoreProperties.CATEGORY_SCM)
         .subCategory(CATEGORY_PERFORCE)
         .index(7)
-        .build(),
-      PropertyDefinition.builder(WRITE_TICKETS)
-        .name("Do not write to tickets file when authenticating")
-        .description("Perforce client locks the ticket file during writes, this can cause concurrent analyses to fail. Set this to false to disable this behavior.")
-        .type(PropertyType.BOOLEAN)
-        .defaultValue(TRUE)
-        .onQualifiers(Qualifiers.PROJECT)
-        .category(CoreProperties.CATEGORY_SCM)
-        .subCategory(CATEGORY_PERFORCE)
-        .index(8)
         .build());
   }
 
@@ -179,9 +167,5 @@ public class PerforceConfiguration implements BatchComponent {
 
   public int sockSoTimeout() {
     return settings.getInt(SOCKSOTIMEOUT_PROP_KEY);
-  }
-
-  public boolean writeTickets() {
-    return settings.getBoolean(WRITE_TICKETS);
   }
 }
