@@ -20,6 +20,7 @@
 package org.sonar.plugins.scm.perforce;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.perforce.p4java.core.IChangelist;
 import com.perforce.p4java.core.file.FileSpecOpStatus;
 import com.perforce.p4java.core.file.IFileAnnotation;
@@ -130,7 +131,7 @@ public class PerforceBlameCommand extends BlameCommand {
         // We really couldn't get any information for this changelist!
         // Unfortunately, blame information is required for every line...
         blameLine = new BlameLine()
-          .revision(String.valueOf(lowerChangelistId))
+          .revision(Strings.nullToEmpty(config.swarm()) + String.valueOf(lowerChangelistId))
           .date(new Date(0))
           .author("unknown");
       }
@@ -154,7 +155,7 @@ public class PerforceBlameCommand extends BlameCommand {
 
     if (changelist != null) {
       return new BlameLine()
-        .revision(String.valueOf(changelistId))
+        .revision(Strings.nullToEmpty(config.swarm()) + String.valueOf(changelistId))
         .date(changelist.getDate())
         .author(changelist.getUsername());
     }
@@ -166,7 +167,7 @@ public class PerforceBlameCommand extends BlameCommand {
     IFileRevisionData data = revisionDataByChangelistId.get(changelistId);
     if (data != null) {
       return new BlameLine()
-        .revision(String.valueOf(changelistId))
+        .revision(Strings.nullToEmpty(config.swarm()) + String.valueOf(changelistId))
         .date(data.getDate())
         .author(data.getUserName());
     }
