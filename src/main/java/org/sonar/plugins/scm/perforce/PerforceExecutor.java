@@ -30,6 +30,7 @@ import com.perforce.p4java.impl.generic.client.ClientView.ClientViewMapping;
 import com.perforce.p4java.impl.mapbased.rpc.RpcPropertyDefs;
 import com.perforce.p4java.impl.mapbased.rpc.sys.helper.RpcSystemFileCommandsHelper;
 import com.perforce.p4java.option.UsageOptions;
+import com.perforce.p4java.option.server.LoginOptions;
 import com.perforce.p4java.option.server.TrustOptions;
 import com.perforce.p4java.server.IOptionsServer;
 import com.perforce.p4java.server.ServerFactory;
@@ -126,7 +127,8 @@ public class PerforceExecutor {
         if (!isLogin(server)) {
           // Login to the server with a password.
           // Password can be null if it is not needed (i.e. SSO logins).
-          server.login(config.password(), null);
+          LoginOptions options = new LoginOptions(false, true);
+          server.login(config.password(), options);
         }
       }
     } catch (URISyntaxException e) {

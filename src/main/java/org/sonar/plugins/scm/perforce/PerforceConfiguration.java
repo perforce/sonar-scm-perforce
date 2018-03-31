@@ -168,5 +168,4 @@ public class PerforceConfiguration implements BatchComponent {
   public int sockSoTimeout() {
     return settings.getInt(SOCKSOTIMEOUT_PROP_KEY);
   }
-
 }

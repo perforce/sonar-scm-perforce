@@ -29,5 +29,5 @@ sonar.perforce.clientImpersonatedHostname | Name of the host computer to imperso
 * No auto-detection since nothing in workspace seems to show this is under Perforce control management (like .git folder for Git workspace).
 * Blame is not executed in parallel since we are not confident in the thread safety of p4java library.
 
-## Developper informations
-The plugin use the p4java pure Java implementation of Perforce client: http://www.perforce.com/perforce/doc.current/manuals/p4java/01_p4java.html
+## Developer information
+The plugin uses the p4java pure Java implementation of Perforce client: http://www.perforce.com/perforce/doc.current/manuals/p4java/01_p4java.html
