@@ -46,6 +46,8 @@ public class PerforceConfiguration implements BatchComponent {
   private static final String CLIENT_IMPERSONATED_HOST_PROP_KEY = "sonar.perforce.clientImpersonatedHostname";
   private static final String CHARSET_PROP_KEY = "sonar.perforce.charset";
   private static final String SOCKSOTIMEOUT_PROP_KEY = "sonar.perforce.sockSoTimeout";
+  static final String SWARM_PROP_KEY = "sonar.perforce.swarm";
+  private static final String SWARM_DEFAULT_KEY = "";
 
   private final Settings settings;
 
@@ -128,6 +130,16 @@ public class PerforceConfiguration implements BatchComponent {
         .category(CoreProperties.CATEGORY_SCM)
         .subCategory(CATEGORY_PERFORCE)
         .index(7)
+        .build(),
+      PropertyDefinition.builder(SWARM_PROP_KEY)
+        .name("Perforce swarm url")
+        .description("The full url of your swarm or p4view browser, eg http://swarm.yourcompany.com/")
+        .type(PropertyType.STRING)
+        .defaultValue(SWARM_DEFAULT_KEY)
+        .onQualifiers(Qualifiers.PROJECT)
+        .category(CoreProperties.CATEGORY_SCM)
+        .subCategory(CATEGORY_PERFORCE)
+        .index(8)
         .build());
   }
 
@@ -169,4 +181,8 @@ public class PerforceConfiguration implements BatchComponent {
     return settings.getInt(SOCKSOTIMEOUT_PROP_KEY);
   }
 
+  @CheckForNull
+  public String swarm() {
+    return settings.getString(SWARM_PROP_KEY);
+  }
 }

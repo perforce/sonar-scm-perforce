@@ -41,5 +41,6 @@ public class PerforceConfigurationTest {
     assertThat(config.password()).isNull();
     assertThat(config.useSsl()).isFalse();
     assertThat(config.sockSoTimeout()).isEqualTo(RpcPropertyDefs.RPC_SOCKET_SO_TIMEOUT_DEFAULT);
+    assertThat(config.swarm()).isNull();
   }
 }
