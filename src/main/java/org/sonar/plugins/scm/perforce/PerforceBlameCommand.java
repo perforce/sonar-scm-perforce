@@ -52,8 +52,8 @@ public class PerforceBlameCommand extends BlameCommand {
 
   private static final Logger LOG = LoggerFactory.getLogger(PerforceBlameCommand.class);
   private final PerforceConfiguration config;
-  private final Map<Integer, IFileRevisionData> revisionDataByChangelistId = new HashMap<>();
-  private final Map<Integer, IChangelist> changelistCache = new HashMap<>();
+  private final Map<Integer, IFileRevisionData> revisionDataByChangelistId = new HashMap<Integer, IFileRevisionData>();
+  private final Map<Integer, IChangelist> changelistCache = new HashMap<Integer, IChangelist>();
 
   public PerforceBlameCommand(PerforceConfiguration config) {
     this.config = config;
@@ -64,6 +64,7 @@ public class PerforceBlameCommand extends BlameCommand {
     FileSystem fs = input.fileSystem();
     LOG.debug("Working directory: " + fs.baseDir().getAbsolutePath());
     PerforceExecutor executor = new PerforceExecutor(config, fs.baseDir());
+    
     try {
       for (InputFile inputFile : input.filesToBlame()) {
         blame(inputFile, executor.getServer(), output);
@@ -116,7 +117,7 @@ public class PerforceBlameCommand extends BlameCommand {
    */
   private List<BlameLine> computeBlame(InputFile inputFile, IOptionsServer server, List<IFileAnnotation> fileAnnotations)
     throws ConnectionException, RequestException, AccessException {
-    List<BlameLine> lines = new ArrayList<>();
+    List<BlameLine> lines = new ArrayList<BlameLine>();
     for (IFileAnnotation fileAnnotation : fileAnnotations) {
       int lowerChangelistId = fileAnnotation.getLower();
 

@@ -19,27 +19,31 @@
  */
 package org.sonar.plugins.scm.perforce;
 
-import com.perforce.p4java.impl.mapbased.rpc.RpcPropertyDefs;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.Test;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.config.Settings;
+import org.sonar.api.config.internal.ConfigurationBridge;
+import org.sonar.api.config.internal.MapSettings;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.perforce.p4java.impl.mapbased.rpc.RpcPropertyDefs;
 
 public class PerforceConfigurationTest {
 
-  @Test
-  public void checkDefaultValues() {
-    Settings settings = new Settings(new PropertyDefinitions(PerforceConfiguration.getProperties()));
+    @Test
+    public void checkDefaultValues() {
+	Settings settings = new MapSettings(new PropertyDefinitions(PerforceConfiguration.getProperties()));
+	ConfigurationBridge bridge = new ConfigurationBridge(settings);
 
-    PerforceConfiguration config = new PerforceConfiguration(settings);
-    assertThat(config.charset()).isNull();
-    assertThat(config.clientName()).isNull();
-    assertThat(config.clientImpersonatedHostname()).isNull();
-    assertThat(config.port()).isNull();
-    assertThat(config.username()).isNull();
-    assertThat(config.password()).isNull();
-    assertThat(config.useSsl()).isFalse();
-    assertThat(config.sockSoTimeout()).isEqualTo(RpcPropertyDefs.RPC_SOCKET_SO_TIMEOUT_DEFAULT);
-  }
+	PerforceConfiguration config = new PerforceConfiguration(bridge);
+	assertThat(config.charset()).isNull();
+	assertThat(config.clientName()).isNull();
+	assertThat(config.clientImpersonatedHostname()).isNull();
+	assertThat(config.port()).isNull();
+	assertThat(config.username()).isNull();
+	assertThat(config.password()).isNull();
+	assertThat(config.useSsl()).isFalse();
+	assertThat(config.sockSoTimeout()).isEqualTo(RpcPropertyDefs.RPC_SOCKET_SO_TIMEOUT_DEFAULT);
+    }
 }

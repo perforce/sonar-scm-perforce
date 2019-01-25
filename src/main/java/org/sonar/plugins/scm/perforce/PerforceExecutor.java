@@ -19,6 +19,20 @@
  */
 package org.sonar.plugins.scm.perforce;
 
+import java.io.File;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Optional;
+import java.util.Properties;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.sonar.api.utils.MessageException;
+
 import com.perforce.p4java.client.IClient;
 import com.perforce.p4java.client.IClientViewMapping;
 import com.perforce.p4java.core.file.FileSpecBuilder;
@@ -34,16 +48,6 @@ import com.perforce.p4java.option.server.TrustOptions;
 import com.perforce.p4java.server.IOptionsServer;
 import com.perforce.p4java.server.ServerFactory;
 import com.perforce.p4java.server.callback.ICommandCallback;
-import java.io.File;
-import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Properties;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.sonar.api.utils.MessageException;
 
 public class PerforceExecutor {
 
