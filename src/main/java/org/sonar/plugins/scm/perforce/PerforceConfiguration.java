@@ -19,22 +19,24 @@
  */
 package org.sonar.plugins.scm.perforce;
 
-import com.google.common.collect.ImmutableList;
-import com.perforce.p4java.impl.mapbased.rpc.RpcPropertyDefs;
-import org.sonar.api.BatchComponent;
-import org.sonar.api.CoreProperties;
-import org.sonar.api.PropertyType;
-import org.sonar.api.batch.InstantiationStrategy;
-import org.sonar.api.config.PropertyDefinition;
-import org.sonar.api.config.Settings;
-import org.sonar.api.resources.Qualifiers;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.annotation.CheckForNull;
 
-import java.util.List;
+import org.sonar.api.CoreProperties;
+import org.sonar.api.PropertyType;
+import org.sonar.api.batch.InstantiationStrategy;
+import org.sonar.api.batch.ScannerSide;
+import org.sonar.api.config.Configuration;
+import org.sonar.api.config.PropertyDefinition;
+import org.sonar.api.resources.Qualifiers;
+
+import com.perforce.p4java.impl.mapbased.rpc.RpcPropertyDefs;
 
 @InstantiationStrategy(InstantiationStrategy.PER_BATCH)
-public class PerforceConfiguration implements BatchComponent {
+@ScannerSide
+public class PerforceConfiguration  {
 
   private static final String FALSE = "false";
   private static final String CATEGORY_PERFORCE = "Perforce";
@@ -47,14 +49,15 @@ public class PerforceConfiguration implements BatchComponent {
   private static final String CHARSET_PROP_KEY = "sonar.perforce.charset";
   private static final String SOCKSOTIMEOUT_PROP_KEY = "sonar.perforce.sockSoTimeout";
 
-  private final Settings settings;
-
-  public PerforceConfiguration(Settings settings) {
+ 
+  private final Configuration settings;
+  
+  public PerforceConfiguration(Configuration settings) {
     this.settings = settings;
   }
 
   public static List<PropertyDefinition> getProperties() {
-    return ImmutableList.of(
+    return Arrays.asList(
       PropertyDefinition.builder(PORT_PROP_KEY)
         .name("Perforce service port")
         .description("The host and port number of the Perforce service with which to communicate. Format is host:port.")
@@ -133,40 +136,40 @@ public class PerforceConfiguration implements BatchComponent {
 
   @CheckForNull
   public String port() {
-    return settings.getString(PORT_PROP_KEY);
+    return settings.get(PORT_PROP_KEY).orElse(null);
   }
 
   @CheckForNull
   public String username() {
-    return settings.getString(USER_PROP_KEY);
+    return settings.get(USER_PROP_KEY).orElse(null);
   }
 
   @CheckForNull
   public String password() {
-    return settings.getString(PASSWORD_PROP_KEY);
+    return settings.get(PASSWORD_PROP_KEY).orElse(null);
   }
 
   @CheckForNull
   public String charset() {
-    return settings.getString(CHARSET_PROP_KEY);
+    return settings.get(CHARSET_PROP_KEY).orElse(null);
   }
 
-  public boolean useSsl() {
-    return settings.getBoolean(USESSL_PROP_KEY);
+  public Boolean useSsl() {
+    return settings.getBoolean(USESSL_PROP_KEY).orElse(null);
   }
 
   @CheckForNull
   public String clientName() {
-    return settings.getString(CLIENT_PROP_KEY);
+    return settings.get(CLIENT_PROP_KEY).orElse(null);
   }
 
   @CheckForNull
   public String clientImpersonatedHostname() {
-    return settings.getString(CLIENT_IMPERSONATED_HOST_PROP_KEY);
+    return settings.get(CLIENT_IMPERSONATED_HOST_PROP_KEY).orElse(null);
   }
 
-  public int sockSoTimeout() {
-    return settings.getInt(SOCKSOTIMEOUT_PROP_KEY);
+  public Integer sockSoTimeout() {
+    return settings.getInt(SOCKSOTIMEOUT_PROP_KEY).orElse(null);
   }
 
 }

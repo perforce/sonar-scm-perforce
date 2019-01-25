@@ -1,22 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.sonarsource.parent</groupId>
-    <artifactId>parent</artifactId>
-    <version>29</version>
-    <relativePath />
-  </parent>
   <groupId>org.sonarsource.scm.perforce</groupId>
   <artifactId>sonar-scm-perforce-plugin</artifactId>
-  <name>SonarQube :: Plugins :: SCM :: Perforce</name>
-  <version>1.5-SNAPSHOT</version>
+  <version>1.6-SNAPSHOT</version>
+  
+  <!-- this is important for sonar-packaging-maven-plugin -->
   <packaging>sonar-plugin</packaging>
-  <description>Perforce SCM Provider.</description>
-  <url>http://redirect.sonarsource.com/plugins/scmperforce.html</url>
-  <inceptionYear>2014</inceptionYear>
-
-  <licenses>
+ 
+ 
+ <licenses>
     <license>
       <name>GNU LGPL 3</name>
       <url>http://www.gnu.org/licenses/lgpl.txt</url>
@@ -31,14 +24,12 @@
       <timezone>+1</timezone>
     </developer>
   </developers>
-
   <scm>
     <connection>scm:git:git@github.com:SonarQubeCommunity/sonar-scm-perforce.git</connection>
     <developerConnection>scm:git:git@github.com:SonarQubeCommunity/sonar-scm-perforce.git</developerConnection>
     <url>https://github.com/SonarQubeCommunity/sonar-scm-perforce</url>
     <tag>HEAD</tag>
   </scm>
-  
   <issueManagement>
     <system>GitHub Issues</system>
     <url>https://github.com/SonarQubeCommunity/sonar-scm-perforce/issues</url>
@@ -48,15 +39,14 @@
     <system>Travis</system>
     <url>https://travis-ci.org/SonarQubeCommunity/sonar-scm-perforce</url>
   </ciManagement>
-
-  <properties>
-    <sonar.buildVersion>5.0</sonar.buildVersion>
-    <sonar.pluginName>Perforce</sonar.pluginName>
-    <sonar.pluginClass>org.sonar.plugins.scm.perforce.PerforcePlugin</sonar.pluginClass>
-    <gitRepositoryName>sonar-scm-perforce</gitRepositoryName>
-  </properties>
-
+  
   <dependencies>
+    <dependency>
+      <groupId>org.sonarsource.sonarqube</groupId>
+      <artifactId>sonar-plugin-api</artifactId>
+      <version>7.4</version>
+      <scope>provided</scope>
+    </dependency>
     <dependency>
       <groupId>com.perforce</groupId>
       <artifactId>p4java</artifactId>
@@ -68,13 +58,7 @@
       <version>2.0.3</version>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>org.codehaus.sonar</groupId>
-      <artifactId>sonar-plugin-api</artifactId>
-      <version>${sonar.buildVersion}</version>
-      <scope>provided</scope>
-    </dependency>
-
+    
     <!-- unit tests -->
     <dependency>
       <groupId>junit</groupId>
@@ -94,6 +78,52 @@
       <version>1.9.5</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+    	<groupId>org.slf4j</groupId>
+    	<artifactId>slf4j-api</artifactId>
+    	<version>1.7.25</version>
+	</dependency>
+	<!-- https://mvnrepository.com/artifact/commons-lang/commons-lang -->
+	<dependency>
+    	<groupId>commons-lang</groupId>
+    	<artifactId>commons-lang</artifactId>
+    	<version>2.6</version>
+	</dependency>
+	<!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+	<dependency>
+    	<groupId>com.google.guava</groupId>
+    	<artifactId>guava</artifactId>
+    	<version>r05</version>
+	</dependency>
+	
   </dependencies>
-
+ 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>
+        <artifactId>sonar-packaging-maven-plugin</artifactId>
+        <version>1.17</version>
+        <extensions>true</extensions>
+        <configuration>
+          <!-- the entry-point class that extends org.sonar.api.SonarPlugin -->
+          <pluginClass>org.sonar.plugins.scm.perforce.PerforcePlugin</pluginClass>
+          <pluginDescription>PerforcePlugin</pluginDescription>
+           
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>3.1</version>
+        <executions>
+          <execution>
+            <id>attach-descriptor</id>
+            <goals>
+              <goal>attach-descriptor</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

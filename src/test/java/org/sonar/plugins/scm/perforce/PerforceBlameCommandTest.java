@@ -97,7 +97,7 @@ public class PerforceBlameCommandTest {
     when(line5ChangeList4.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
     when(line5ChangeList4.getLower()).thenReturn(4);
 
-    Map<IFileSpec, List<IFileRevisionData>> result = new HashMap<>();
+    Map<IFileSpec, List<IFileRevisionData>> result = new HashMap<IFileSpec, List<IFileRevisionData>>();
     IFileSpec fileSpecResult = mock(IFileSpec.class);
     when(fileSpecResult.getOpStatus()).thenReturn(FileSpecOpStatus.VALID);
     IFileRevisionData revision3 = mock(IFileRevisionData.class);
