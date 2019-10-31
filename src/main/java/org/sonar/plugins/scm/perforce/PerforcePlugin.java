@@ -19,23 +19,27 @@
  */
 package org.sonar.plugins.scm.perforce;
 
-import com.google.common.collect.ImmutableList;
-import org.sonar.api.SonarPlugin;
-
 import java.util.ArrayList;
 import java.util.List;
 
-public final class PerforcePlugin extends SonarPlugin {
+import org.sonar.api.Plugin;
 
-  @Override
-  public List getExtensions() {
-    List result = new ArrayList();
-    result.addAll(ImmutableList.of(
-      PerforceScmProvider.class,
-      PerforceBlameCommand.class,
-      PerforceConfiguration.class));
-    result.addAll(PerforceConfiguration.getProperties());
-    return result;
-  }
+import com.google.common.collect.ImmutableList;
 
+public final class PerforcePlugin implements Plugin {
+
+    @Override
+    public void define(Context context) {
+	context.addExtensions(getExtensions());
+
+    }
+
+    public List getExtensions() {
+	List result = new ArrayList();
+	result.addAll(
+		ImmutableList.of(PerforceScmProvider.class,
+			    PerforceBlameCommand.class, PerforceConfiguration.class, PerforceExecutor.class));
+	result.addAll(PerforceConfiguration.getProperties());
+	return result;
+    }
 }
