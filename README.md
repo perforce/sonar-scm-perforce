@@ -1,4 +1,4 @@
-[![Support](https://img.shields.io/badge/Support-None-red.svg)]
+![Support](https://img.shields.io/badge/Support-None-red.svg)
 
 # SonarQube Perforce plugin
 [![Build Status](https://travis-ci.org/SonarQubeCommunity/sonar-scm-perforce.svg?branch=master)](https://travis-ci.org/SonarQubeCommunity/sonar-scm-perforce)
