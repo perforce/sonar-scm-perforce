@@ -75,28 +75,23 @@ public class PerforceBlameCommandTest {
     // Changelist 3 is present in history
 
     IFileAnnotation line1ChangeList3 = mock(IFileAnnotation.class);
-    when(line1ChangeList3.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
     when(line1ChangeList3.getLower()).thenReturn(3);
 
     IFileAnnotation line2ChangeList3 = mock(IFileAnnotation.class);
-    when(line2ChangeList3.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
     when(line2ChangeList3.getLower()).thenReturn(3);
 
     // Changelist 4 is not present in history but can be fetched from server
 
     IFileAnnotation line3ChangeList4 = mock(IFileAnnotation.class);
-    when(line3ChangeList4.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
     when(line3ChangeList4.getLower()).thenReturn(4);
 
     // Changelist 5 is not present in history nor in server
 
     IFileAnnotation line4ChangeList5 = mock(IFileAnnotation.class);
-    when(line4ChangeList5.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
     when(line4ChangeList5.getLower()).thenReturn(5);
 
     // Put Changlist 4 again to verify we fetch only once from server
     IFileAnnotation line5ChangeList4 = mock(IFileAnnotation.class);
-    when(line5ChangeList4.getDepotPath()).thenReturn("foo/bar/src/Foo.java");
     when(line5ChangeList4.getLower()).thenReturn(4);
 
     Map<IFileSpec, List<IFileRevisionData>> result = new HashMap<IFileSpec, List<IFileRevisionData>>();
